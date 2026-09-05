@@ -638,3 +638,4 @@ body.light #page-team-chat.active { background: #F5F5DC; }
 body.light #song-view-title { color: #0d47a1; }
 body.dark-white #song-view-title { color: #90caf9; }
 .song-link { text-decoration: underline !important; background: none !important; border: none !important; padding: 0 !important; border-radius: 0 !important; }
+#song-view-links { text-align: center !important; background: none !important; border: none !important; padding: 0 !important; }

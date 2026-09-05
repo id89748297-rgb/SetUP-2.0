@@ -142,16 +142,15 @@ setTimeout(() => scrollChatToBottom(), 50);
 function setupChatKeyboardHandling() {
 if (!window.visualViewport || window.__chatKeyboardHandlerBound) return;
 window.__chatKeyboardHandlerBound = true;
-const modal = document.getElementById('page-team-chat');
 window.visualViewport.addEventListener('resize', adjustChatForKeyboard);
 window.visualViewport.addEventListener('scroll', adjustChatForKeyboard);
 }
 function adjustChatForKeyboard() {
-const modal = document.getElementById('page-team-chat');
-if (!modal || !modal.classList.contains('show') || !window.visualViewport) return;
+const page = document.getElementById('page-team-chat');
+if (!page || !page.classList.contains('active') || !window.visualViewport) return;
 const vv = window.visualViewport;
-modal.style.setProperty('height', vv.height + 'px', 'important');
-modal.style.setProperty('top', vv.offsetTop + 'px', 'important');
+page.style.setProperty('height', vv.height + 'px', 'important');
+page.style.setProperty('top', '0px', 'important');
 scrollChatToBottom();
 }
 function autoGrowChatInput(el) {
@@ -1149,7 +1148,7 @@ html += `<div class="list-item ${expiredClass}" style="cursor: pointer;" onclick
 <div class="item-left" style="min-width: 0; flex: 1;">
 <div style="min-width: 0; flex: 1;">
 <div class="item-title" style="${isExpired ? 'color: #ef5350;' : ''}">${escapeHtml(sl.name)}${changesBadge}</div>
-<div style="font-size: 8px; color: ${isExpired ? '#ef5350' : '#888'}; margin-top: 2px;">${formatSetlistDate(sl.date, sl.time)} · ${sl.songs.length} песен</div>
+<div style="font-size: 10px; color: ${isExpired ? '#ef5350' : '#888'}; margin-top: 2px;">${formatSetlistDate(sl.date, sl.time)} · ${sl.songs.length} песен</div>
 </div>
 </div>
 <div class="item-actions" style="display: flex; gap: 4px;">${actions}</div>

@@ -186,9 +186,9 @@ return dateA - dateB;
 filtered.forEach(sl => { const div = document.createElement('div'); div.className = 'list-item'; div.style.cursor = 'default';
 const isExpired = !sl.isArchived && isSetlistExpired(sl);
 const expiredClass = isExpired ? 'setlist-expired' : '';
-const sharedBadge = (sl.sharedToTeams && sl.sharedToTeams.length > 0) ? ` <span style="background: rgba(144, 202, 249, 0.3); color: #90caf9; font-size: 9px; padding: 1px 5px; border-radius: 4px; margin-left: 4px;">📤 ${sl.sharedToTeams.length}</span>` : '';
+const sharedBadge = '';
 let actions = sl.isArchived ? `<button class="btn-icon" onclick="event.stopPropagation(); restoreSetlist(${sl.id})">↻</button><button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">️</button>` : `<button class="btn-icon" onclick="event.stopPropagation(); openEditSetlistModal(${sl.id})">✏️</button><button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">️🗑️</button>`;
-div.innerHTML = `<div class="item-left ${expiredClass}" style="min-width: 0; flex: 1;"><div class="item-title">${escapeHtml(sl.name)}${sharedBadge}</div><div style="font-size: 8px; color: ${isExpired ? '#ef5350' : '#888'}; margin-top: 2px;">${formatSetlistDate(sl.date, sl.time)} · ${sl.songs.length} песен</div></div><div class="item-actions" style="display: flex; gap: 4px;">${actions}</div>`;
+div.innerHTML = `<div class="item-left ${expiredClass}" style="min-width: 0; flex: 1;"><div class="item-title">${escapeHtml(sl.name)}${sharedBadge}</div><div style="font-size: 10px; color: ${isExpired ? '#ef5350' : '#888'}; margin-top: 2px;">${formatSetlistDate(sl.date, sl.time)} · ${sl.songs.length} песен</div></div><div class="item-actions" style="display: flex; gap: 4px;">${actions}</div>`;
 div.onclick = () => clearSetlistSearchAndOpen(sl.id); list.appendChild(div); });
 updateCarouselBadges();
 }
