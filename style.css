@@ -626,6 +626,7 @@ margin: 0; padding: 0;
 padding-top: env(safe-area-inset-top);
 z-index: 500;
 background: #121212;
+overflow: hidden;
 }
 body.light #page-team-chat.active { background: #F5F5DC; }
 .chat-page-header { display:flex; align-items:center; gap:10px; padding:10px 12px; flex-shrink:0; border-bottom:1px solid rgba(255,255,255,0.08); }

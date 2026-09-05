@@ -242,7 +242,8 @@ function renderTeamMembersList() {
         const avatarHtml = r.p.avatar
             ? `<img src="${escapeHtml(r.p.avatar)}" class="team-member-avatar" alt="">`
             : `<div class="team-member-avatar-placeholder">👤</div>`;
-        const isMe = currentUser && r.uid === currentUser.uid;
+        const myCachedUid = currentUser ? currentUser.uid : localStorage.getItem('clc_current_uid');
+        const isMe = myCachedUid && r.uid === myCachedUid;
         const targetRole = (roles[r.uid] && roles[r.uid].role) || 'member';
         const roleText = targetRole === 'owner' ? 'Владелец' : targetRole === 'admin' ? 'Админ' : '';
         const canKick = !isMe && targetRole !== 'owner' && (iAmOwner || (iAmAdmin && targetRole !== 'admin'));
@@ -252,7 +253,7 @@ function renderTeamMembersList() {
 <div class="item-left">
 ${avatarHtml}
 <div style="min-width:0;flex:1;">
-<div class="item-title">${escapeHtml(r.label)}${team.createdBy && r.uid === team.createdBy ? ' <span style="font-size:10px;vertical-align:middle;opacity:0.85;">❤️</span>' : ''}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
+<div class="item-title">${escapeHtml(r.label)}${team.createdBy && r.uid === team.createdBy ? ' <span style="font-size:7px;vertical-align:middle;opacity:0.85;">❤️</span>' : ''}${isMe ? ' <span style="color:#4caf50;font-size:11px;">(вы)</span>' : ''}</div>
 ${roleText ? `<div style="color:#888;font-size:11px;margin-top:2px;">${roleText}</div>` : ''}
 </div>
 ${kickBtn}
