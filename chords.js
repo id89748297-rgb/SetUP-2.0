@@ -19,6 +19,15 @@ result = result.replace(/\x00LABEL(\d+)\x00/g, (match, idx) => labels[parseInt(i
 result = result.replace(/\x00PAIR(\d+)\x00/g, (match, idx) => { const pair = pairs[parseInt(idx)]; return pair.split('-').map(p => convertAccidentals(p, mode)).join('-'); });
 return result;
 }
+function renderLyricsLine(text) {
+const trimmed = text.replace(/^\s+/, '');
+if (trimmed.startsWith('@')) {
+const leadingWs = text.slice(0, text.length - trimmed.length);
+const rest = trimmed.slice(1);
+return leadingWs + `<span class="accent-word">${processAccentWords(escapeHtml(rest))}</span>`;
+}
+return processAccentWords(escapeHtml(text));
+}
 function processAccentWords(text) { return text.replace(/(^|\s)=([^\s=]+)/g, '$1<span class="accent-word">$2</span>'); }
 function processChordLabels(chords) {
 return chords.replace(/\(([^)]+)\)/g, (match, content) => {

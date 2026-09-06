@@ -112,6 +112,8 @@ document.getElementById('chat-team-name').innerText = team.name;
 document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src="${team.avatar}" alt="">` : '🎸';
 document.getElementById('chat-input').value = '';
 showPage('page-team-chat');
+setupChatKeyboardHandling();
+setTimeout(adjustChatForKeyboard, 50);
 if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
 let mCache = {};
 try { mCache = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}'); } catch {}
@@ -136,7 +138,6 @@ if (currentChatTeamId === teamId) renderChatMessages(teamId);
 startChatListener(teamId);
 startChatReadsListener(teamId);
 markChatRead(teamId);
-setupChatKeyboardHandling();
 setTimeout(() => scrollChatToBottom(), 50);
 }
 function setupChatKeyboardHandling() {
@@ -149,8 +150,18 @@ function adjustChatForKeyboard() {
 const page = document.getElementById('page-team-chat');
 if (!page || !page.classList.contains('active') || !window.visualViewport) return;
 const vv = window.visualViewport;
-page.style.setProperty('height', vv.height + 'px', 'important');
-page.style.setProperty('top', '0px', 'important');
+const header = document.getElementById('chat-page-header');
+const inputBar = document.getElementById('chat-input-bar');
+const list = document.getElementById('chat-messages-list');
+const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+const headerH = header ? header.offsetHeight : 0;
+const inputH = inputBar ? inputBar.offsetHeight : 0;
+if (header) header.style.setProperty('top', vv.offsetTop + 'px', 'important');
+if (inputBar) inputBar.style.setProperty('bottom', keyboardHeight + 'px', 'important');
+if (list) {
+list.style.setProperty('top', (vv.offsetTop + headerH) + 'px', 'important');
+list.style.setProperty('bottom', (keyboardHeight + inputH) + 'px', 'important');
+}
 scrollChatToBottom();
 }
 function autoGrowChatInput(el) {
