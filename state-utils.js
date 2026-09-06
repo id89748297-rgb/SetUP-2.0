@@ -134,3 +134,12 @@ if (result && typeof result.then === 'function') { result.then(finish).catch(fin
 else { finish(); }
 return result;
 }
+function clearSearchInput(inputId, rerenderFn) {
+const input = document.getElementById(inputId);
+if (input) { input.value = ''; toggleSearchClearBtn(input); }
+if (typeof rerenderFn === 'function') rerenderFn();
+}
+function toggleSearchClearBtn(input) {
+const btn = input.parentElement.querySelector('.search-clear-btn');
+if (btn) btn.style.display = input.value ? 'flex' : 'none';
+}

@@ -560,7 +560,7 @@ body.light .toast { background: rgba(255, 255, 255, 0.97); color: #333; box-shad
 .member-profile-row { display: flex; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid #333; }
 body.light .member-profile-row { border-bottom-color: #eee; }
 .member-profile-label { color: #888; font-size: 13px; }
-.member-profile-value { font-weight: bold; text-align: right; }
+.member-profile-value { font-weight: normal; text-align: right; }
 #chat-input { min-height: 38px !important; }
 
 #modal-team-chat.show, #modal-team-members.show {
@@ -640,3 +640,7 @@ body.light #song-view-title { color: #0d47a1; }
 body.dark-white #song-view-title { color: #90caf9; }
 .song-link { text-decoration: underline !important; background: none !important; border: none !important; padding: 0 !important; border-radius: 0 !important; }
 #song-view-links { text-align: center !important; background: none !important; border: none !important; padding: 0 !important; }
+.btn-accent-save { background: rgba(129, 212, 250, 0.5) !important; color: #fff !important; border: 2px solid rgba(129, 212, 250, 0.8) !important; }
+.search-wrap { position: relative; }
+.search-clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: none; align-items: center; justify-content: center; width: 22px; height: 22px; border: none; background: transparent; color: #444; font-size: 16px; font-weight: 300; cursor: pointer; }
+body.light .search-clear-btn { color: #999; }

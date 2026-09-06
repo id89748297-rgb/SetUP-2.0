@@ -43,7 +43,7 @@ if (PAIR_RE.test(t)) return true;
 if (/^\x01P\d+\x01$/.test(t)) return true;
 return CHORD_RE.test(convertBtoH(cleanWordForChordCheck(t)));
 });
-if (allChords) return { chords: restoreParens(protectedLine.trim()), text: '', rightNote, inlineComment };
+if (allChords) { const leadingWs = protectedLine.match(/^\s*/)[0]; return { chords: leadingWs + restoreParens(protectedLine.trim()), text: '', rightNote, inlineComment }; }
 const chordPartRe = new RegExp(`^((?:\\s*(?:${PAIR_RE_STR}|[A-H][#b]?(?:m|M|maj|min|dim|aug|sus|add|7|9|11|13|6|2|4|5|7sus4|sus2|sus4|maj7|min7|m7b5|dim7|aug7)?[0-9b]*(?:\\/[A-H][#b]?(?:m|M|maj|min|dim|aug|sus|add|7|9|11|13|6|2|4|5|7sus4|sus2|sus4|maj7|min7|m7b5|dim7|aug7)?[0-9b]*)?|x\\d+|\\d+[рpx]|\\||\\/{1,8}|\\x01P\\d+\\x01))+)`, 'i');
 const chordPartMatch = protectedLine.match(chordPartRe);
 if (chordPartMatch) {
