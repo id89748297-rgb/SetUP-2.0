@@ -139,8 +139,8 @@
 <select id="category-filter" class="category-filter-select" onchange="renderSongs()">
 <option value="">Все категории</option>
 <option value="fast">🔥 Быстрые</option>
-<option value="medium"> Средние</option>
-<option value="slow">🧎 Медленные</option>
+<option value="medium">🎵 Средние</option>
+<option value="slow">🧎🏻 Медленные</option>
 <option value="none">Без категории</option>
 </select>
 </div>
@@ -376,7 +376,7 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <label style="font-weight: bold; margin-bottom: 5px; display: block;">Автор (необязательно)</label><div style="position: relative;"><input type="text" id="edit-author" placeholder="Автор" oninput="showAuthorSuggestions()" onblur="setTimeout(() => hideAuthorSuggestions(), 200)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><div id="author-suggestions" class="author-suggestions" style="display: none;"></div></div>
 <label style="font-weight: bold; margin-bottom: 5px; display: block;">Тональность <span class="required-star">*</span></label><select id="edit-key"><option value="">-- Выберите тональность --</option><option value="C">C (До)</option><option value="C#">C# / Db</option><option value="D">D (Ре)</option><option value="D#">D# / Eb</option><option value="E">E (Ми)</option><option value="F">F (Фа)</option><option value="F#">F# / Gb</option><option value="G">G (Соль)</option><option value="G#">G# / Ab</option><option value="A">A (Ля)</option><option value="A#">A# / Bb</option><option value="H">H (Си)</option></select>
 <label style="font-weight: bold; margin-bottom: 5px; display: block;">BPM (необязательно)</label><input type="number" id="edit-bpm" placeholder="Например: 120" min="42" max="500" autocomplete="off">
-<label style="font-weight: bold; margin-bottom: 5px; display: block;">Категория (необязательно)</label><select id="edit-category"><option value="">Не указана</option><option value="fast"> Быстрая</option><option value="medium">🎵 Средняя</option><option value="slow">🧎 Медленная</option></select>
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">Категория (необязательно)</label><select id="edit-category"><option value="">Не указана</option><option value="fast">🔥 Быстрая</option><option value="medium">🎵 Средняя</option><option value="slow">🧎🏻 Медленная</option></select>
 <label style="font-weight: bold; margin-bottom: 5px; display: block;">Текст песни <span class="required-star">*</span></label><textarea id="edit-text" placeholder="G C D&#10;Текст песни" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></textarea>
 <div class="modal-actions"><button class="btn-secondary" onclick="goBackFromSongEdit()">Отмена</button><button class="btn-main" style="width: auto; margin:0;" onclick="saveSong()">Сохранить</button></div>
 </div>

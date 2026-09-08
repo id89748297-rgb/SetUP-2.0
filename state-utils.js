@@ -11,8 +11,8 @@ function formatSetlistDate(dateString, timeString) { let result = formatDate(dat
 function getCurrentDate() { const date = new Date(); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
 function getNextSundayDate() { const date = new Date(); const day = date.getDay(); const daysUntilSunday = (7 - day) % 7; date.setDate(date.getDate() + daysUntilSunday); return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`; }
 function getCurrentTime() { const date = new Date(); return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`; }
-const CATEGORY_LABELS = { fast: '🔥 Б', medium: '🎵 С', slow: '🧎 M' };
-const CATEGORY_ICONS = { fast: '🔥', medium: '🎵', slow: '🧎' };
+const CATEGORY_LABELS = { fast: '🔥 Б', medium: '🎵 С', slow: '🧎🏻 M' };
+const CATEGORY_ICONS = { fast: '🔥', medium: '🎵', slow: '🧎🏻' };
 const DIATONIC_CHORDS = {
 'C':  [{r:'C',m:false},{r:'D',m:true},{r:'E',m:true},{r:'F',m:false},{r:'G',m:false},{r:'A',m:true},{r:'H',m:true}],
 'C#': [{r:'C#',m:false},{r:'D#',m:true},{r:'F',m:true},{r:'F#',m:false},{r:'G#',m:false},{r:'A#',m:true},{r:'C',m:true}],

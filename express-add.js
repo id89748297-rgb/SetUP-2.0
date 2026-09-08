@@ -3,6 +3,15 @@ function setupSwipe() {
 if (!('ontouchstart' in window) && !navigator.maxTouchPoints) return;
 let startX = 0, startY = 0, tracking = false, currentPageId = null, isClick = false;
 document.addEventListener('touchstart', (e) => {
+if (document.body.style.position === 'fixed') {
+const chatPage = document.getElementById('page-team-chat');
+const membersModal = document.getElementById('modal-team-members');
+const chatOpen = chatPage && chatPage.classList.contains('active');
+const membersOpen = membersModal && membersModal.classList.contains('show');
+if (!chatOpen && !membersOpen && typeof unlockBodyScroll === 'function') {
+unlockBodyScroll();
+}
+}
 if (e.target.closest('.modal') || e.target.closest('[contenteditable="true"]') || ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 startX = e.touches[0].clientX;
 startY = e.touches[0].clientY;

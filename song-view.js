@@ -286,7 +286,7 @@ function renderSongContent(text, fromKey, toKey, capo) {
 const lines = text.split('\n'); const columnsClass = currentColumns === 2 ? 'song-columns-2' : 'song-columns-1';
 let html = `<div class="${columnsClass}">`; let sectionContent = '', sectionIdx = 0, lineIdx = 0, sectionStartLine = -1; const songId = currentSongId;
 let foundFirstNonEmpty = false;
-function flushSection() { if (sectionContent) { const noteValue = (sectionNotes[songId] && sectionNotes[songId][sectionIdx]) || ''; html += `<div class="song-section" data-section-idx="${sectionIdx}" data-start-line="${sectionStartLine}"><input type="text" class="section-note-input" maxlength="12" value="${noteValue.replace(/"/g, '&quot;')}" oninput="saveSectionNote(${songId}, ${sectionIdx}, this.value)" placeholder="..." />${sectionContent}</div>`; sectionContent = ''; sectionIdx++; } }
+function flushSection() { if (sectionContent) { html += `<div class="song-section" data-section-idx="${sectionIdx}" data-start-line="${sectionStartLine}">${sectionContent}</div>`; sectionContent = ''; sectionIdx++; } }
 lines.forEach((line, lineNum) => {
 const trimmed = line.trim();
 const isFirstNonEmpty = !foundFirstNonEmpty && trimmed !== '';

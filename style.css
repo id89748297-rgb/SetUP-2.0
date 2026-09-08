@@ -650,3 +650,6 @@ body.dark-white #song-view-title { color: #90caf9; }
 .search-wrap { position: relative; }
 .search-clear-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); display: none; align-items: center; justify-content: center; width: 22px; height: 22px; border: none; background: transparent; color: #444; font-size: 16px; font-weight: 300; cursor: pointer; }
 body.light .search-clear-btn { color: #999; }
+.chat-page-header, #chat-input-bar { touch-action: none; }
+html, body { overscroll-behavior: none; }
+#chat-messages-list { overscroll-behavior: contain; }
