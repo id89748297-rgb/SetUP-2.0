@@ -180,52 +180,40 @@ function setupChatFocusPin() {
 if (window.__chatFocusPinBound) return;
 window.__chatFocusPinBound = true;
 const input = document.getElementById('chat-input');
-const inputBar = document.getElementById('chat-input-bar');
 if (!input) return;
 const chatActive = () => {
 const page = document.getElementById('page-team-chat');
 return !!(page && page.classList.contains('active'));
 };
-const releaseInputBar = () => {
-if (inputBar) {
-inputBar.style.removeProperty('position');
-inputBar.style.removeProperty('bottom');
-inputBar.style.removeProperty('left');
-inputBar.style.removeProperty('right');
-inputBar.style.removeProperty('z-index');
-}
-};
-// Сжатие страницы ДО клавиатуры. Панель ввода на этот миг «приколота» к низу экрана,
-// чтобы она не сдвинулась под пальцем и клавиатура гарантированно открылась
+// Сжатие страницы под клавиатуру ДО её появления (по памяти о прошлой высоте)
 const preshrink = () => {
 if (!chatActive() || __vvMaxH <= 0) return;
 let lastKb = parseInt(localStorage.getItem('clc_kb_height') || '0');
 if (!lastKb || lastKb < 100 || lastKb > __vvMaxH * 0.7) lastKb = Math.round(__vvMaxH * 0.42);
 const page = document.getElementById('page-team-chat');
 page.style.setProperty('height', (__vvMaxH - lastKb) + 'px', 'important');
-if (inputBar) {
-inputBar.style.setProperty('position', 'fixed', 'important');
-inputBar.style.setProperty('bottom', '0', 'important');
-inputBar.style.setProperty('left', '0', 'important');
-inputBar.style.setProperty('right', '0', 'important');
-inputBar.style.setProperty('z-index', '30', 'important');
-}
+// страховка: если за 800 мс клавиатура не открылась — возвращаем полный размер
 setTimeout(() => {
 if (chatActive() && !__kbOpen && document.activeElement !== input) {
 page.style.removeProperty('height');
 page.style.removeProperty('top');
-releaseInputBar();
 }
 }, 800);
 };
-['pointerdown', 'touchstart'].forEach(ev => {
-input.addEventListener(ev, preshrink, { passive: true });
-});
-// фокус получен — отпускаем панель: она встаёт на место над будущей клавиатурой
+// ТЕЛЕФОН: перехватываем конец тапа, сжимаем страницу и фокусируем поле вручную.
+// Браузер не «прицеливается» по пальцу, поэтому подъём поля ввода фокусу не мешает
+input.addEventListener('touchend', (e) => {
+if (!chatActive()) return;
+e.preventDefault();
+preshrink();
+window.scrollTo(0, 0);
+input.focus();
+}, false);
+// МЫШЬ (компьютер): там прыжков нет — просто сжимаем при фокусе
 input.addEventListener('focusin', () => {
 if (!chatActive()) return;
+preshrink();
 window.scrollTo(0, 0);
-releaseInputBar();
 });
 window.addEventListener('scroll', () => {
 if (chatActive() && window.scrollY !== 0) window.scrollTo(0, 0);
