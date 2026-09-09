@@ -180,32 +180,53 @@ function setupChatFocusPin() {
 if (window.__chatFocusPinBound) return;
 window.__chatFocusPinBound = true;
 const input = document.getElementById('chat-input');
+const inputBar = document.getElementById('chat-input-bar');
 if (!input) return;
 const chatActive = () => {
 const page = document.getElementById('page-team-chat');
 return !!(page && page.classList.contains('active'));
 };
-// Сжатие страницы ДО появления клавиатуры (по памяти о прошлой высоте)
+const releaseInputBar = () => {
+if (inputBar) {
+inputBar.style.removeProperty('position');
+inputBar.style.removeProperty('bottom');
+inputBar.style.removeProperty('left');
+inputBar.style.removeProperty('right');
+inputBar.style.removeProperty('z-index');
+}
+};
+// Сжатие страницы ДО клавиатуры. Панель ввода на этот миг «приколота» к низу экрана,
+// чтобы она не сдвинулась под пальцем и клавиатура гарантированно открылась
 const preshrink = () => {
 if (!chatActive() || __vvMaxH <= 0) return;
 let lastKb = parseInt(localStorage.getItem('clc_kb_height') || '0');
 if (!lastKb || lastKb < 100 || lastKb > __vvMaxH * 0.7) lastKb = Math.round(__vvMaxH * 0.42);
 const page = document.getElementById('page-team-chat');
 page.style.setProperty('height', (__vvMaxH - lastKb) + 'px', 'important');
-// страховка: если за 800 мс клавиатура так и не открылась (например,
-// тап был по кнопке отправки) — возвращаем полный размер
+if (inputBar) {
+inputBar.style.setProperty('position', 'fixed', 'important');
+inputBar.style.setProperty('bottom', '0', 'important');
+inputBar.style.setProperty('left', '0', 'important');
+inputBar.style.setProperty('right', '0', 'important');
+inputBar.style.setProperty('z-index', '30', 'important');
+}
 setTimeout(() => {
 if (chatActive() && !__kbOpen && document.activeElement !== input) {
 page.style.removeProperty('height');
 page.style.removeProperty('top');
+releaseInputBar();
 }
 }, 800);
 };
-// САМОЕ РАННЕЕ касание — раньше, чем iOS узнаёт про фокус и прокручивает вьюпорт
 ['pointerdown', 'touchstart'].forEach(ev => {
 input.addEventListener(ev, preshrink, { passive: true });
 });
-input.addEventListener('focusin', preshrink);
+// фокус получен — отпускаем панель: она встаёт на место над будущей клавиатурой
+input.addEventListener('focusin', () => {
+if (!chatActive()) return;
+window.scrollTo(0, 0);
+releaseInputBar();
+});
 window.addEventListener('scroll', () => {
 if (chatActive() && window.scrollY !== 0) window.scrollTo(0, 0);
 }, true);
@@ -260,6 +281,8 @@ __chatKBLast = -1;
 __vvMaxH = 0;
 const pageEl = document.getElementById('page-team-chat');
 if (pageEl) { pageEl.style.removeProperty('height'); pageEl.style.removeProperty('top'); }
+const ibEl = document.getElementById('chat-input-bar');
+if (ibEl) { ['position', 'bottom', 'left', 'right', 'z-index'].forEach(p => ibEl.style.removeProperty(p)); }
 showPage('page-home');
 unlockBodyScroll();
 }
