@@ -181,17 +181,27 @@ if (window.__chatFocusPinBound) return;
 window.__chatFocusPinBound = true;
 const input = document.getElementById('chat-input');
 if (!input) return;
-input.addEventListener('focus', () => {
-// iOS при появлении клавиатуры прокручивает страницу к полю ввода —
-// возвращаем прокрутку в ноль и пересчитываем размер, пока клавиатура выезжает
-[0, 100, 300, 600].forEach(ms => setTimeout(() => {
+const chatActive = () => {
 const page = document.getElementById('page-team-chat');
-if (page && page.classList.contains('active')) { window.scrollTo(0, 0); adjustChatForKeyboard(); }
+return !!(page && page.classList.contains('active'));
+};
+// ГЛАВНОЕ: гасим любую прокрутку страницы СИНХРОННО — в момент события,
+// до того как браузер успеет нарисовать сдвинутый кадр
+window.addEventListener('scroll', () => {
+if (chatActive() && window.scrollY !== 0) window.scrollTo(0, 0);
+}, true);
+// focusin срабатывает раньше, чем iOS начнёт подвозить страницу к полю ввода
+input.addEventListener('focusin', () => {
+if (chatActive()) window.scrollTo(0, 0);
+});
+input.addEventListener('focus', () => {
+// пока клавиатура выезжает — держим прокрутку в нуле и пересчитываем размер
+[0, 100, 300, 600].forEach(ms => setTimeout(() => {
+if (chatActive()) { window.scrollTo(0, 0); adjustChatForKeyboard(); }
 }, ms));
 });
 input.addEventListener('blur', () => setTimeout(() => {
-const page = document.getElementById('page-team-chat');
-if (page && page.classList.contains('active')) window.scrollTo(0, 0);
+if (chatActive()) window.scrollTo(0, 0);
 }, 100));
 }
 function setupChatKeyboardHandling() {
