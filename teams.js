@@ -34,7 +34,7 @@ const leaveOrDeleteBtn = memberCount > 1
 ? `<button class="btn-icon" onclick="event.stopPropagation(); deleteTeam('${t.id}')" title="Покинуть" style="color: #ef5350;">🗑️</button>`
 : `<button class="btn-icon" onclick="event.stopPropagation(); deleteTeam('${t.id}')" title="Удалить команду" style="color: #ef5350;">🗑️</button>`;
 const avatarHtml = t.avatar
-? `<img src="${t.avatar}" class="team-list-avatar" alt="">`
+? `<img src="${escapeHtml(t.avatar)}" class="team-list-avatar" alt="">`
 : `<div class="team-list-avatar-placeholder">🎸</div>`;
 const teamUnread = getUnreadChatCount(t.id);
 const unreadBadge = teamUnread > 0 ? `<div style="position:absolute;top:-4px;left:-4px;background:#ef5350;color:#fff;font-size:10px;font-weight:bold;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;z-index:2;">${teamUnread}</div>` : '';
@@ -109,7 +109,7 @@ if (!team) return;
 currentChatTeamId = teamId;
 chatEditingMessageId = null;
 document.getElementById('chat-team-name').innerText = team.name;
-document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src="${team.avatar}" alt="">` : '🎸';
+document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src="${escapeHtml(team.avatar)}" alt="">` : '🎸';
 document.getElementById('chat-input').value = '';
 showPage('page-team-chat');
 setupChatKeyboardHandling();
@@ -288,13 +288,30 @@ if (!db || !currentUser) return;
 db.collection('teamRegistry').doc(teamId).collection('chatReads').doc(currentUser.uid)
 .set({ lastReadAt: Date.now() }, { merge: true }).catch(err => console.error('mark chat read failed:', err));
 }
+function formatChatDateLabel(ts) {
+const d = new Date(ts);
+const now = new Date();
+const startOfDay = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / (24 * 60 * 60 * 1000));
+if (diffDays === 0) return 'Сегодня';
+if (diffDays === 1) return 'Вчера';
+const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+return `${d.getDate()} ${months[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : ''}`;
+}
 function renderChatMessages(teamId) {
 const list = document.getElementById('chat-messages-list');
 if (!list) return;
 const msgs = chatMessagesCache[teamId] || [];
 const roles = teamRolesCache[teamId] || {};
 const reads = chatReadsCache[teamId] || {};
+let lastDayKey = null;
 list.innerHTML = msgs.map(m => {
+let dateDivider = '';
+const dayKey = new Date(m.createdAt).toDateString();
+if (dayKey !== lastDayKey) {
+lastDayKey = dayKey;
+dateDivider = `<div style="text-align:center;margin:8px 0;"><span style="background:rgba(255,255,255,0.08);color:#888;font-size:12px;padding:4px 12px;border-radius:12px;">${formatChatDateLabel(m.createdAt)}</span></div>`;
+}
 const isMe = m.senderId === currentUser.uid;
 const p = currentMembersProfiles[m.senderId] || {};
 const name = [p.displayName, p.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
@@ -311,15 +328,16 @@ const allRead = otherUids.every(uid => (reads[uid] || 0) >= m.createdAt);
 statusHtml = allRead ? `<span style="color:#42a5f5;font-size:11px;">✔\uFE0E✔\uFE0E</span>` : `<span style="color:#888;font-size:11px;">✔\uFE0E</span>`;
 }
 const pressAttrs = !m.deleted ? `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"` : '';
+let bubbleHtml;
 if (isMe) {
-return `<div style="display:flex;justify-content:flex-end;">
+bubbleHtml = `<div style="display:flex;justify-content:flex-end;">
 <div ${pressAttrs} style="max-width:75%;background:rgba(144,202,249,0.18);border-radius:14px 14px 4px 14px;padding:8px 12px;">
 <div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;">${bodyText}${editedTag}</div>
 <div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;">${m.starred ? '<span style="font-size:11px;">⭐</span>' : ''}<span style="font-size:11px;color:#888;">${time}</span>${statusHtml}</div>
 </div>
 </div>`;
 } else {
-return `<div style="display:flex;gap:8px;align-items:flex-end;">
+bubbleHtml = `<div style="display:flex;gap:8px;align-items:flex-end;">
 ${avatarHtml}
 <div ${pressAttrs} style="max-width:75%;background:#2a2a2a;border-radius:14px 14px 14px 4px;padding:8px 12px;">
 <div style="font-size:12px;color:#90caf9;font-weight:bold;">${escapeHtml(name)}${roleLabel ? ` <span style="color:#888;font-weight:normal;">· ${roleLabel}</span>` : ''}</div>
@@ -328,6 +346,7 @@ ${avatarHtml}
 </div>
 </div>`;
 }
+return dateDivider + bubbleHtml;
 }).join('');
 }
 function handleChatInputKeydown(e) {
@@ -587,7 +606,7 @@ document.getElementById('team-edit-password').value = team.password || '';
 document.getElementById('team-edit-avatar').value = '';
 const container = document.getElementById('team-avatar-preview-container');
 if (team.avatar) {
-container.innerHTML = `<img src="${team.avatar}" class="team-avatar-edit" alt="Avatar"><div style="font-size: 12px; color: #888; margin-top: 5px;">Загрузите новое, чтобы заменить</div>`;
+container.innerHTML = `<img src="${escapeHtml(team.avatar)}" class="team-avatar-edit" alt="Avatar"><div style="font-size: 12px; color: #888; margin-top: 5px;">Загрузите новое, чтобы заменить</div>`;
 } else {
 container.innerHTML = '<div class="team-avatar-edit-placeholder"></div><div style="font-size: 12px; color: #888; margin-top: 5px;">Аватарка не установлена</div>';
 }
@@ -960,15 +979,25 @@ function applyTeamOverlay(teamId) {
 const data = teamDataCache[teamId];
 if (!data) return;
 songs = songs.filter(s => s.fromTeam !== teamId);
-const cacheIds = new Set((data.setlists || []).map(s => s.id));
-setlists = setlists.filter(sl => !(sl.teamId === teamId && (sl.fromTeamSync || cacheIds.has(sl.id))));
 (data.songs || []).forEach(s => {
 songs.push({ ...s, fromTeam: teamId });
 // Комментарии команды для этой песни — общие, приходят вместе с песней
 if (data.sectionNotes && data.sectionNotes[s.id]) sectionNotes[s.id] = data.sectionNotes[s.id];
 if (data.inlineComments && data.inlineComments[s.id]) inlineComments[s.id] = data.inlineComments[s.id];
 });
-(data.setlists || []).forEach(sl => setlists.push({ ...sl, teamId: teamId, fromTeamSync: true }));
+const cloudSetlists = data.setlists || [];
+const existingById = {};
+setlists.filter(sl => sl.teamId === teamId && sl.fromTeamSync).forEach(sl => { existingById[sl.id] = sl; });
+setlists = setlists.filter(sl => !(sl.teamId === teamId && sl.fromTeamSync));
+cloudSetlists.forEach(cloudSl => {
+const existing = existingById[cloudSl.id];
+const localIsNewer = existing && existing.localUpdatedAt && existing.localUpdatedAt > (cloudSl.sharedAt || 0);
+if (localIsNewer) {
+setlists.push(existing);
+} else {
+setlists.push({ ...cloudSl, teamId: teamId, fromTeamSync: true });
+}
+});
 }
 function applyAllTeamOverlays() {
 Object.keys(teamDataCache).forEach(applyTeamOverlay);
@@ -1162,10 +1191,10 @@ statusSlot = allRead
 let actions = statusSlot;
 if (sl.isArchived) {
 actions += `<button class="btn-icon" onclick="event.stopPropagation(); restoreSetlist(${sl.id})">↻</button>`;
-actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">🗑️</button>`;
+actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '', false)">🗑️</button>`;
 } else {
 actions += `<button class="btn-icon" onclick="event.stopPropagation(); openEditSetlistModal(${sl.id})">✏️</button>`;
-actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">🗑️</button>`;
+actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '', false)">🗑️</button>`;
 }
 html += `<div class="list-item ${expiredClass}" style="cursor: pointer;" onclick="clearSetlistSearchAndOpen(${sl.id})">
 <div class="item-left" style="min-width: 0; flex: 1;">

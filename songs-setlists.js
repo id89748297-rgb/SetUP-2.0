@@ -30,10 +30,12 @@ const savedColor = localStorage.getItem('clc_color');
 if (savedColor === 'violet') document.body.classList.add('violet'); else document.body.classList.remove('violet');
 currentHideArrows = localStorage.getItem('clc_hide_arrows') === 'true';
 currentHideComments = localStorage.getItem('clc_hide_comments') === 'true';
-const savedState = JSON.parse(localStorage.getItem('clc_state') || '{}');
+let savedState = {};
+try { savedState = JSON.parse(localStorage.getItem('clc_state') || '{}'); } catch (e) { savedState = {}; }
 if (savedState.page === 'page-song-view' && savedState.songId) { currentSongId = savedState.songId; currentSlId = savedState.slId || null; if (savedState.slId) { openSetlistDetail(savedState.slId); } showPage('page-song-view'); openSongView(savedState.songId, savedState.slId); }
 else if (savedState.page === 'page-setlist-detail' && savedState.slId) { currentSlId = savedState.slId; showPage('page-setlist-detail'); openSetlistDetail(savedState.slId); }
-const savedDefaults = JSON.parse(localStorage.getItem('clc_defaults') || '{}');
+let savedDefaults = {};
+try { savedDefaults = JSON.parse(localStorage.getItem('clc_defaults') || '{}'); } catch (e) { savedDefaults = {}; }
 if (savedDefaults.fontSize) fontSize = savedDefaults.fontSize;
 if (savedDefaults.columns) currentColumns = savedDefaults.columns;
 const savedSort = localStorage.getItem('clc_songs_sort');
@@ -113,13 +115,13 @@ filtered = filtered.filter(s => s.category === categoryFilter);
 const sorted = sortSongs(filtered, sortType);
 homeFilteredSongs = sorted;
 const countLabel = document.getElementById('songs-count-label');
-const countText = categoryFilter === 'fast' ? '🔥 Быстрые' : categoryFilter === 'medium' ? '🎵 Средние' : categoryFilter === 'slow' ? '🧎 Медленные' : categoryFilter === 'none' ? 'Без категории' : 'Все песни';
+const countText = categoryFilter === 'fast' ? '🔥 Быстрые' : categoryFilter === 'medium' ? '🎵 Средние' : categoryFilter === 'slow' ? '🧎🏻 Медленные' : categoryFilter === 'none' ? 'Без категории' : 'Все песни';
 if (countLabel) countLabel.innerText = countText;
 document.getElementById('songs-count').innerText = sorted.length;
-sorted.forEach(s => { const keyLabel = s.key ? ` <span style="color:#90caf9; font-size:12px;">[${s.key}]</span>` : ''; const authorText = s.author ? `<div style="color:#888; font-size:8px;">${escapeHtml(s.author)}</div>` : ''; const categoryIcon = s.category && CATEGORY_ICONS[s.category] ? `<div style="display: flex; flex-direction: column; align-items: center; margin-left: 8px;"><div style="font-size: 18px;">${CATEGORY_ICONS[s.category]}</div>${s.bpm ? `<div style="color:#888; font-size:8px;">${s.bpm} BPM</div>` : ''}</div>` : (s.bpm ? `<div style="display: flex; flex-direction: column; align-items: center; margin-left: 8px;"><div style="color:#888; font-size:8px;">${s.bpm} BPM</div></div>` : ''); const div = document.createElement('div'); div.className = 'list-item'; div.style.cursor = 'default'; div.innerHTML = `<div class="item-left" style="min-width: 0; flex: 1; display: flex; align-items: center;"><div style="min-width: 0; flex: 1;"><div class="item-title" style="max-height: 2.6em; line-height: 1.3;">${escapeHtml(s.title)}${keyLabel}</div>${authorText}</div>${categoryIcon}</div><div class="item-actions" style="display: flex; gap: 4px;"><button class="btn-icon" onclick="event.stopPropagation(); openMainSongEditor(${s.id})">✏️</button><button class="btn-icon" onclick="event.stopPropagation(); confirmDeleteSong(${s.id}, '${s.title.replace(/'/g, "\\'")}')">🗑️</button></div>`; div.onclick = () => clearSearchAndOpenSong(s.id); list.appendChild(div); const titleEl = div.querySelector('.item-title'); if (titleEl && titleEl.scrollHeight > titleEl.clientHeight) { titleEl.style.fontSize = '12px'; } });
+sorted.forEach(s => { const keyLabel = s.key ? ` <span style="color:#90caf9; font-size:12px;">[${s.key}]</span>` : ''; const authorText = s.author ? `<div style="color:#888; font-size:8px;">${escapeHtml(s.author)}</div>` : ''; const categoryIcon = s.category && CATEGORY_ICONS[s.category] ? `<div style="display: flex; flex-direction: column; align-items: center; margin-left: 8px;"><div style="font-size: 18px;">${CATEGORY_ICONS[s.category]}</div>${s.bpm ? `<div style="color:#888; font-size:8px;">${s.bpm} BPM</div>` : ''}</div>` : (s.bpm ? `<div style="display: flex; flex-direction: column; align-items: center; margin-left: 8px;"><div style="color:#888; font-size:8px;">${s.bpm} BPM</div></div>` : ''); const div = document.createElement('div'); div.className = 'list-item'; div.style.cursor = 'default'; div.innerHTML = `<div class="item-left" style="min-width: 0; flex: 1; display: flex; align-items: center;"><div style="min-width: 0; flex: 1;"><div class="item-title" style="max-height: 2.6em; line-height: 1.3;">${escapeHtml(s.title)}${keyLabel}</div>${authorText}</div>${categoryIcon}</div><div class="item-actions" style="display: flex; gap: 4px;"><button class="btn-icon" onclick="event.stopPropagation(); openMainSongEditor(${s.id})">✏️</button><button class="btn-icon" onclick="event.stopPropagation(); confirmDeleteSong(${s.id})">🗑️</button></div>`; div.onclick = () => clearSearchAndOpenSong(s.id); list.appendChild(div); const titleEl = div.querySelector('.item-title'); if (titleEl && titleEl.scrollHeight > titleEl.clientHeight) { titleEl.style.fontSize = '12px'; } });
 updateCarouselBadges();
 }
-function confirmDeleteSong(id, name) { showDeleteConfirm('song', id, `Песню "${name}"`, () => { songs = songs.filter(s => s.id !== id); setlists.forEach(sl => sl.songs = sl.songs.filter(x => x.id !== id)); if (sectionNotes[id]) delete sectionNotes[id]; if (inlineComments[id]) delete inlineComments[id]; saveToStorage(); renderSongs(); }); }
+function confirmDeleteSong(id, name) { const s = songs.find(x => x.id === id); const nm = (typeof name === 'string' && name) ? name : (s ? s.title : ''); showDeleteConfirm('song', id, `Песню "${nm}"`, () => { songs = songs.filter(s => s.id !== id); setlists.forEach(sl => sl.songs = sl.songs.filter(x => x.id !== id)); if (sectionNotes[id]) delete sectionNotes[id]; if (inlineComments[id]) delete inlineComments[id]; saveToStorage(); renderSongs(); }); }
 function openMainSongEditor(id = null) { currentSongId = id; openSongEditor(id, false); }
 function openSongEditor(id = null, isFromSetlist = false) {
 currentSongId = id; isLocalEdit = isFromSetlist;
@@ -252,6 +254,10 @@ renderSlSongs();
 }
 }
 function showSetlistDeleteChoice(id, name, isVl) {
+if (!name) { 
+    const sl = setlists.find(x => x.id === id); 
+    name = sl ? sl.name : ''; 
+}
 const sl = setlists.find(x => x.id === id);
 if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
 pendingSetlistAction = { id, name, isVl };
@@ -341,6 +347,7 @@ function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x =>
 document.getElementById('sl-detail-title').innerHTML = `<div style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</div><div style="font-size: 12px; color: #888; font-weight: normal;">${formatSetlistDate(sl.date, sl.time)}</div>`;
 document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail'); }
 function goBackFromSetlistDetail() {
+window.__suppressCarouselSwipeUntil = Date.now() + 400;
 const sl = setlists.find(x => x.id === currentSlId);
 if (sl && sl.teamId) {
 const teamIdx = carouselItems.findIndex(i => i.type === 'team' && i.teamId === sl.teamId);
@@ -365,6 +372,7 @@ const ti = Math.min(Math.max(0, newOrder - 1), sl.songs.length - 1);
 if (ci !== ti) {
 const [moved] = sl.songs.splice(ci, 1);
 sl.songs.splice(ti, 0, moved);
+sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
 renderSlSongs();
@@ -385,7 +393,7 @@ const bpmText = s.bpm ? `<div style="color:#888; font-size:10px; white-space: no
 const rightInfo = (bpmText || authorText) ? `<div style="display: flex; flex-direction: column; align-items: flex-end; margin-right: 8px; flex-shrink: 0;">${bpmText}${authorText}</div>` : '';
 let keySelectHtml = `<select class="key-select-inline" onchange="changeSongKeyInSetlist(${item.id}, this.value)">`; NOTES_SHARP.forEach(key => { keySelectHtml += `<option value="${key}" ${(key === currentSlKey) ? 'selected' : ''}>${key}</option>`; }); keySelectHtml += '</select>';
 const orderValue = idx + 1;
-div.innerHTML = `<div class="item-left"><input type="number" class="order-input" value="${orderValue}" min="1" max="${sl.songs.length}" data-original="${orderValue}" onclick="event.stopPropagation()" onfocus="handleOrderInputFocus(this, ${orderValue})" onblur="handleOrderInputBlur(this, ${item.id})"><div style="min-width: 0; flex: 1;"><div class="item-title">${escapeHtml(s.title)}<span style="color:#90caf9; font-size:12px;">${originalKeyLabel}</span>${localBadge}</div></div>${rightInfo}</div><div class="item-right">${keySelectHtml}<button class="btn-icon" onclick="event.stopPropagation(); confirmRemoveFromSl(${item.id}, '${s.title.replace(/'/g, "\\'")}')" style="color: #ef5350;">🗑️</button></div>`;
+div.innerHTML = `<div class="item-left"><input type="number" class="order-input" value="${orderValue}" min="1" max="${sl.songs.length}" data-original="${orderValue}" onclick="event.stopPropagation()" onfocus="handleOrderInputFocus(this, ${orderValue})" onblur="handleOrderInputBlur(this, ${item.id})"><div style="min-width: 0; flex: 1;"><div class="item-title">${escapeHtml(s.title)}<span style="color:#90caf9; font-size:12px;">${originalKeyLabel}</span>${localBadge}</div></div>${rightInfo}</div><div class="item-right">${keySelectHtml}<button class="btn-icon" onclick="event.stopPropagation(); confirmRemoveFromSl(${item.id})" style="color: #ef5350;">🗑️</button></div>`;
 div.addEventListener('dragstart', (e) => { if (e.target.closest('button, select, input')) { e.preventDefault(); return; } div.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', idx); });
 div.addEventListener('dragover', (e) => { e.preventDefault(); const t = e.target.closest('.list-item'); if (t && t !== div) t.classList.add('drag-over'); });
 div.addEventListener('dragleave', () => { div.classList.remove('drag-over'); });
@@ -400,6 +408,7 @@ const ti = parseInt(t.dataset.index);
 if (!isNaN(fi) && !isNaN(ti) && fi !== ti) {
 const [moved] = sl.songs.splice(fi, 1);
 sl.songs.splice(ti, 0, moved);
+sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
 renderSlSongs();
@@ -410,24 +419,21 @@ div.onclick = (e) => { if(e.target.tagName !== 'BUTTON' && e.target.tagName !== 
 list.appendChild(div); });
 }
 function confirmRemoveFromSl(songId, songName) {
-const sl = setlists.find(x => x.id === currentSlId);
-if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
-showDeleteConfirm('remove', songId, `Песню "${songName}" из сет-листа`, () => {
-sl.songs = sl.songs.filter(x => x.id !== songId);
-saveToStorage();
-syncSetlistIfTeam(sl);
-renderSlSongs();
-});
-}
-function changeSongKeyInSetlist(songId, newKey) {
-const sl = setlists.find(x => x.id === currentSlId);
-const item = sl.songs.find(x => x.id === songId);
-if (!item) return;
-if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); renderSlSongs(); return; }
-item.key = newKey;
-saveToStorage();
-syncSetlistIfTeam(sl);
-if (sl.teamId) { showToast('✅ Тональность изменена для всех участников', 'success'); }
+    // ✅ Ищем название песни по ID, если оно не передано (защита от XSS)
+    if (!songName) { 
+        const s = songs.find(x => x.id === songId); 
+        songName = s ? s.title : ''; 
+    }
+    
+    const sl = setlists.find(x => x.id === currentSlId);
+    if (sl && sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+    showDeleteConfirm('remove', songId, `Песню "${songName}" из сет-листа`, () => {
+        sl.songs = sl.songs.filter(x => x.id !== songId);
+        sl.localUpdatedAt = Date.now();
+        saveToStorage();
+        syncSetlistIfTeam(sl);
+        renderSlSongs();
+    });
 }
 function openAddSongToSlModal() {
 const sl = setlists.find(x => x.id === currentSlId);
@@ -443,6 +449,7 @@ if (filtered.length === 0) { list.innerHTML = '<p style="color: #888; text-align
 filtered.forEach(s => { const div = document.createElement('div'); div.className = 'add-song-item'; div.innerHTML = `<span>${escapeHtml(s.title)}${s.key ? ` [${s.key}]` : ''}</span><span style="color: #90caf9; font-size: 20px;">+</span>`;
 div.onclick = () => {
 sl.songs.push({id: s.id, capo: 0, key: null, chordpro: null, columns: currentColumns, fontSize});
+sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
 document.getElementById('add-song-search').value = '';

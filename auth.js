@@ -12,6 +12,15 @@ auth.onAuthStateChanged(async (user) => {
        if (!user.emailVerified) {
             currentUser = null;
             localStorage.removeItem('clc_current_uid');
+// Очистка личных данных предыдущего пользователя
+['clc_songs','clc_setlists','clc_teams','clc_team_cache','clc_team_members_cache',
+ 'clc_chat_reads_cache','clc_setlist_status_cache','clc_team_roles_cache',
+ 'clc_section_notes','clc_inline_comments','clc_state'].forEach(k => localStorage.removeItem(k));
+if (currentUser) {
+  localStorage.removeItem('clc_avatar_' + currentUser.uid);
+  localStorage.removeItem('clc_profile_cache_' + currentUser.uid);
+}
+songs = []; setlists = []; teams = []; sectionNotes = {}; inlineComments = {};
             if (profileBtn) profileBtn.style.display = 'none';
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             if (authPage) authPage.classList.add('active');
@@ -25,7 +34,9 @@ console.log('✅ Авторизован:', user.email);
 if (profileBtn) profileBtn.style.display = 'flex';
 
        // ✅ СНАЧАЛА ПОКАЗЫВАЕМ ГЛАВНЮ С ЛОКАЛЬНЫМИ ДАННЫМИ (мгновенно!) — но не перебиваем уже восстановленную страницу песни/сет-листа
-        const __savedStateForAuth = JSON.parse(localStorage.getItem('clc_state') || '{}');
+        let __savedStateForAuth = {};
+try { __savedStateForAuth = JSON.parse(localStorage.getItem('clc_state') || '{}'); }
+catch (e) { __savedStateForAuth = {}; }
         if (__savedStateForAuth.page !== 'page-song-view' && __savedStateForAuth.page !== 'page-setlist-detail') {
             showPage('page-home');
         }
@@ -55,6 +66,15 @@ if (profileBtn) profileBtn.style.display = 'flex';
     } else {
         currentUser = null;
         localStorage.removeItem('clc_current_uid');
+// Очистка личных данных предыдущего пользователя
+['clc_songs','clc_setlists','clc_teams','clc_team_cache','clc_team_members_cache',
+ 'clc_chat_reads_cache','clc_setlist_status_cache','clc_team_roles_cache',
+ 'clc_section_notes','clc_inline_comments','clc_state'].forEach(k => localStorage.removeItem(k));
+if (currentUser) {
+  localStorage.removeItem('clc_avatar_' + currentUser.uid);
+  localStorage.removeItem('clc_profile_cache_' + currentUser.uid);
+}
+songs = []; setlists = []; teams = []; sectionNotes = {}; inlineComments = {};
         console.log('❌ Не авторизован');
         if (profileBtn) profileBtn.style.display = 'none';
         resetAvatarsInUI();
@@ -80,6 +100,15 @@ async function logout() {
             }
         }
         localStorage.removeItem('session_id');
+// Очистка личных данных предыдущего пользователя
+['clc_songs','clc_setlists','clc_teams','clc_team_cache','clc_team_members_cache',
+ 'clc_chat_reads_cache','clc_setlist_status_cache','clc_team_roles_cache',
+ 'clc_section_notes','clc_inline_comments','clc_state'].forEach(k => localStorage.removeItem(k));
+if (currentUser) {
+  localStorage.removeItem('clc_avatar_' + currentUser.uid);
+  localStorage.removeItem('clc_profile_cache_' + currentUser.uid);
+}
+songs = []; setlists = []; teams = []; sectionNotes = {}; inlineComments = {};
         // ✅ Firebase сам вызовет onAuthStateChanged(null) во ВСЕХ вкладках
         await auth.signOut();
     }

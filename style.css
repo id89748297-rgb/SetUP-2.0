@@ -653,3 +653,5 @@ body.light .search-clear-btn { color: #999; }
 .chat-page-header, #chat-input-bar { touch-action: none; }
 html, body { overscroll-behavior: none; }
 #chat-messages-list { overscroll-behavior: contain; }
+.btn-main, .btn-secondary, .btn-pastel, .btn-danger, .btn-danger-confirm, .btn-cancel-confirm, .btn-back, .btn-edit-sl, .btn-add-song-top, .btn-archive-sl, .btn-share-sl, .grid-btn, .tab, .inline-save-btn, .inline-cancel-btn, .btn-save-all, .btn-accent-save { font-weight: normal !important; }
+.song-link { display: inline-block !important; text-align: center !important; }

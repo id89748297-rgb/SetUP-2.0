@@ -8,7 +8,9 @@ initCropEvents();  // ← НОВАЯ СТРОЧКА
 buildCarouselItems();
 renderCarousel();
 setupCarouselSwipe();
-const savedStateInit = JSON.parse(localStorage.getItem('clc_state') || '{}');
+let savedStateInit = {};
+try { savedStateInit = JSON.parse(localStorage.getItem('clc_state') || '{}'); }
+catch (e) { console.warn('clc_state повреждён, сброшен'); localStorage.removeItem('clc_state'); }
 const restoringDetailPage = savedStateInit.page === 'page-song-view' || savedStateInit.page === 'page-setlist-detail';
 if (savedStateInit.carouselIdx !== undefined && savedStateInit.carouselIdx < carouselItems.length) {
 carouselActiveIndex = savedStateInit.carouselIdx;
@@ -114,17 +116,18 @@ function refreshPage(btnEl) {
 
 // === TOAST-УВЕДОМЛЕНИЯ ===
 function showToast(message, type = 'error') {
-    const container = document.getElementById('toast-container');
-    if (!container) return;
-    container.innerHTML = '';
-    const toast = document.createElement('div');
-    toast.className = 'toast ' + type;
-    toast.innerHTML = `<span>${message}</span>`;
-    container.appendChild(toast);
-    // Автоудаление через 3 секунды
-    setTimeout(() => {
-        if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 3000);
+    const container = document.getElementById('toast-container');
+    if (!container) return;
+    while (container.children.length >= 3) container.firstChild.remove();
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + type;
+    const span = document.createElement('span');
+    span.textContent = message;
+    toast.appendChild(span);
+    container.appendChild(toast);
+    setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 3000);
 }
 
 // === СЛУШАТЕЛИ СОСТОЯНИЯ СЕТИ ===

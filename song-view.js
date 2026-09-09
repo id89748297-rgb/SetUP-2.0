@@ -277,7 +277,17 @@ renderSongLinks(extractUrlsFromChordpro(text));
 renderSongContent(text, originalKey, currentKey, currentCapo);
 }
 function saveSectionNote(songId, sectionIdx, value) { if (!sectionNotes[songId]) sectionNotes[songId] = {}; if (value.trim() === '') { delete sectionNotes[songId][sectionIdx]; if (!Object.keys(sectionNotes[songId]).length) delete sectionNotes[songId]; } else sectionNotes[songId][sectionIdx] = value.substring(0, 12); saveToStorage(); }
-function saveInlineComment(songId, sectionIdx, lineIdx, value) { if (!inlineComments[songId]) inlineComments[songId] = {}; const key = `${sectionIdx}_${lineIdx}`; if (value.trim() === '') { delete inlineComments[songId][key]; if (!Object.keys(inlineComments[songId]).length) delete inlineComments[songId]; } else inlineComments[songId][key] = value.substring(0, 12); saveToStorage(); }
+function saveInlineComment(songId, sectionIdx, lineIdx, value) {
+if (!inlineComments[songId]) inlineComments[songId] = {};
+const key = `${sectionIdx}_${lineIdx}`;
+if (value.trim() === '') { delete inlineComments[songId][key]; if (!Object.keys(inlineComments[songId]).length) delete inlineComments[songId]; }
+else inlineComments[songId][key] = value.substring(0, 12);
+saveToStorage();
+if (currentSlId) {
+const sl = setlists.find(x => x.id === currentSlId);
+if (sl && sl.teamId) syncSetlistIfTeam(sl);
+}
+}
 function compactChords(chords) {
 if (!currentHideLyrics) return chords;
 return chords.replace(/\s+/g, ' ').trim();

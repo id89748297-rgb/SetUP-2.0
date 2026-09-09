@@ -236,6 +236,7 @@ container.addEventListener('touchend', (e) => {
 if (!carouselTracking) return;
 carouselTracking = false;
 if (!carouselMoved) return;
+if (window.__suppressCarouselSwipeUntil && Date.now() < window.__suppressCarouselSwipeUntil) return;
 const dx = carouselTouchStartX - e.changedTouches[0].clientX;
 const dy = carouselTouchStartY - e.changedTouches[0].clientY;
 if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {

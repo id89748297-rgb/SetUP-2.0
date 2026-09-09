@@ -4,7 +4,12 @@ return 'song_' + Date.now().toString(36) + '_' + Math.random().toString(36).subs
 }
 // === ГЕНЕРАЦИЯ УНИКАЛЬНОГО ЧИСЛОВОГО ID ===
 function getNextId(arr) {
-  return Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  const used = new Set((arr || []).map(x => x.id));
+  let id;
+  do {
+    id = Date.now() * 1000 + Math.floor(Math.random() * 1000);
+  } while (used.has(id));
+  return id;
 }
 function formatDate(dateString) { const date = new Date(dateString); const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']; return `${date.getDate()} ${months[date.getMonth()]}`; }
 function formatSetlistDate(dateString, timeString) { let result = formatDate(dateString); if (timeString) result += `, ${timeString}`; return result; }

@@ -139,7 +139,22 @@ event.target.value = '';
 }
 function exportDatabase() { const dn = `База_${getCurrentDate()}`; const fn = prompt('Имя файла:', dn); if (fn === null) return; const cn = fn.trim() || dn; const final = cn.toLowerCase().endsWith('.clcdb') ? cn : cn + '.clcdb'; localStorage.setItem('clc_last_backup', Date.now().toString()); shareFile({ version: 1, type: 'database', app: 'Worship SetUP', exportDate: new Date().toISOString(), data: { songs: songs.filter(s => !s.fromTeam), setlists: setlists.filter(sl => !sl.fromTeamSync), sectionNotes, inlineComments, personalViewSettings } }, final); }
 function handleImportDatabase(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const data = JSON.parse(e.target.result); if (data.type !== 'database' || !data.data) { alert('❌ Не файл базы данных'); return; } const db = data.data; let added = 0, skipped = 0; if (db.songs) db.songs.forEach(is => { is = sanitizeImportedSong(is); if (!is) { skipped++; return; } if (!songs.find(s => s.title.toLowerCase() === is.title.toLowerCase())) { const nid = getNextId(songs);
-songs.push({ id: nid, title: is.title, author: is.author || '', key: is.key || 'C', bpm: is.bpm || '', category: is.category || '', chordpro: is.chordpro || '', images: is.images || {}, columns: is.columns || currentColumns, fontSize: is.fontSize || fontSize, createdAt: is.createdAt || Date.now() }); added++; } else skipped++; }); if (db.sectionNotes) Object.keys(db.sectionNotes).forEach(sid => { if (!sectionNotes[sid]) sectionNotes[sid] = {}; Object.assign(sectionNotes[sid], db.sectionNotes[sid]); }); if (db.inlineComments) Object.keys(db.inlineComments).forEach(sid => { if (!inlineComments[sid]) inlineComments[sid] = {}; Object.assign(inlineComments[sid], db.inlineComments[sid]); }); saveToStorage(); if (currentHomeView === 'songs') renderSongs(); else renderSetlists(); alert(`✅ Импорт!\nДобавлено: ${added}\nПропущено: ${skipped}`); } catch (err) { alert(' Ошибка: ' + err.message); } 
+songs.push({ id: nid, title: is.title, author: is.author || '', key: is.key || 'C', bpm: is.bpm || '', category: is.category || '', chordpro: is.chordpro || '', images: is.images || {}, columns: is.columns || currentColumns, fontSize: is.fontSize || fontSize, createdAt: is.createdAt || Date.now() }); added++; } else skipped++; });
+if (Array.isArray(db.setlists)) {
+  db.setlists.forEach(isl => {
+    if (!isl || !Array.isArray(isl.songs)) return;
+    const mapped = isl.songs.map(it => {
+      if (it && it.id && songs.find(s => s.id === it.id)) return { id: it.id, key: it.key || null, capo: it.capo || 0, chordpro: it.chordpro || null };
+      const local = songs.find(s => s.title.toLowerCase() === String(it && it.title || '').toLowerCase());
+      return local ? { id: local.id, key: it.key || null, capo: it.capo || 0, chordpro: it.chordpro || null } : null;
+    }).filter(Boolean);
+    if (mapped.length) {
+      setlists.push({ id: getNextId(setlists), name: isl.name || 'Импорт', date: isl.date || getCurrentDate(),
+        time: isl.time || '', isArchived: !!isl.isArchived, songs: mapped, createdAt: isl.createdAt || Date.now() });
+    }
+  });
+}
+if (db.sectionNotes) Object.keys(db.sectionNotes).forEach(sid => { if (!sectionNotes[sid]) sectionNotes[sid] = {}; Object.assign(sectionNotes[sid], db.sectionNotes[sid]); }); if (db.inlineComments) Object.keys(db.inlineComments).forEach(sid => { if (!inlineComments[sid]) inlineComments[sid] = {}; Object.assign(inlineComments[sid], db.inlineComments[sid]); }); saveToStorage(); if (currentHomeView === 'songs') renderSongs(); else renderSetlists(); alert(`✅ Импорт!\nДобавлено: ${added}\nПропущено: ${skipped}`); } catch (err) { alert(' Ошибка: ' + err.message); } 
 }; 
 reader.onerror = () => { alert(`❌ Не удалось прочитать файл "${file.name}"`); }; // <-- ВСТАВИТЬ ЭТУ СТРОКУ
 reader.readAsText(file); event.target.value = ''; }
