@@ -185,17 +185,22 @@ const chatActive = () => {
 const page = document.getElementById('page-team-chat');
 return !!(page && page.classList.contains('active'));
 };
-// ГЛАВНОЕ: гасим любую прокрутку страницы СИНХРОННО — в момент события,
-// до того как браузер успеет нарисовать сдвинутый кадр
 window.addEventListener('scroll', () => {
 if (chatActive() && window.scrollY !== 0) window.scrollTo(0, 0);
 }, true);
-// focusin срабатывает раньше, чем iOS начнёт подвозить страницу к полю ввода
 input.addEventListener('focusin', () => {
-if (chatActive()) window.scrollTo(0, 0);
+if (!chatActive()) return;
+window.scrollTo(0, 0);
+// ГЛАВНОЕ: сжимаем страницу ДО появления клавиатуры — по памяти о прошлой высоте.
+// Тогда полю ввода сразу есть где разместиться, и iOS не прокручивает страницу.
+let lastKb = parseInt(localStorage.getItem('clc_kb_height') || '0');
+if (!lastKb || lastKb < 100 || lastKb > __vvMaxH * 0.7) lastKb = Math.round(__vvMaxH * 0.42);
+if (__vvMaxH > 0) {
+const page = document.getElementById('page-team-chat');
+page.style.setProperty('height', (__vvMaxH - lastKb) + 'px', 'important');
+}
 });
 input.addEventListener('focus', () => {
-// пока клавиатура выезжает — держим прокрутку в нуле и пересчитываем размер
 [0, 100, 300, 600].forEach(ms => setTimeout(() => {
 if (chatActive()) { window.scrollTo(0, 0); adjustChatForKeyboard(); }
 }, ms));
@@ -212,20 +217,22 @@ window.visualViewport.addEventListener('scroll', adjustChatForKeyboard);
 }
 let __chatKBLast = -1;
 let __vvMaxH = 0; // запоминаем высоту экрана БЕЗ клавиатуры
+let __kbOpen = false;
 function adjustChatForKeyboard() {
 const page = document.getElementById('page-team-chat');
 if (!page || !page.classList.contains('active') || !window.visualViewport) return;
 const vv = window.visualViewport;
 const vh = Math.round(vv.height);
 if (vh > __vvMaxH) __vvMaxH = vh;
-// высота клавиатуры = насколько экран стал ниже максимума
 const kb = __vvMaxH > 0 ? (__vvMaxH - vh) : 0;
-if (kb > 150) {
+if (kb > 100) {
+__kbOpen = true;
+localStorage.setItem('clc_kb_height', String(kb)); // запоминаем реальную высоту клавиатуры
 page.style.setProperty('height', vh + 'px', 'important');
-// компенсация сдвига визуального вьюпорта iOS — шапка стоит на месте
 page.style.setProperty('top', vv.offsetTop + 'px', 'important');
 window.scrollTo(0, 0);
-} else {
+} else if (kb < 30 && __kbOpen) {
+__kbOpen = false;
 page.style.removeProperty('height');
 page.style.removeProperty('top');
 }
