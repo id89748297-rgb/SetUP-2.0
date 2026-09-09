@@ -185,21 +185,30 @@ const chatActive = () => {
 const page = document.getElementById('page-team-chat');
 return !!(page && page.classList.contains('active'));
 };
+// Сжатие страницы ДО появления клавиатуры (по памяти о прошлой высоте)
+const preshrink = () => {
+if (!chatActive() || __vvMaxH <= 0) return;
+let lastKb = parseInt(localStorage.getItem('clc_kb_height') || '0');
+if (!lastKb || lastKb < 100 || lastKb > __vvMaxH * 0.7) lastKb = Math.round(__vvMaxH * 0.42);
+const page = document.getElementById('page-team-chat');
+page.style.setProperty('height', (__vvMaxH - lastKb) + 'px', 'important');
+// страховка: если за 800 мс клавиатура так и не открылась (например,
+// тап был по кнопке отправки) — возвращаем полный размер
+setTimeout(() => {
+if (chatActive() && !__kbOpen && document.activeElement !== input) {
+page.style.removeProperty('height');
+page.style.removeProperty('top');
+}
+}, 800);
+};
+// САМОЕ РАННЕЕ касание — раньше, чем iOS узнаёт про фокус и прокручивает вьюпорт
+['pointerdown', 'touchstart'].forEach(ev => {
+input.addEventListener(ev, preshrink, { passive: true });
+});
+input.addEventListener('focusin', preshrink);
 window.addEventListener('scroll', () => {
 if (chatActive() && window.scrollY !== 0) window.scrollTo(0, 0);
 }, true);
-input.addEventListener('focusin', () => {
-if (!chatActive()) return;
-window.scrollTo(0, 0);
-// ГЛАВНОЕ: сжимаем страницу ДО появления клавиатуры — по памяти о прошлой высоте.
-// Тогда полю ввода сразу есть где разместиться, и iOS не прокручивает страницу.
-let lastKb = parseInt(localStorage.getItem('clc_kb_height') || '0');
-if (!lastKb || lastKb < 100 || lastKb > __vvMaxH * 0.7) lastKb = Math.round(__vvMaxH * 0.42);
-if (__vvMaxH > 0) {
-const page = document.getElementById('page-team-chat');
-page.style.setProperty('height', (__vvMaxH - lastKb) + 'px', 'important');
-}
-});
 input.addEventListener('focus', () => {
 [0, 100, 300, 600].forEach(ms => setTimeout(() => {
 if (chatActive()) { window.scrollTo(0, 0); adjustChatForKeyboard(); }
