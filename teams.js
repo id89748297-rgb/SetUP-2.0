@@ -208,6 +208,7 @@ function setupChatKeyboardHandling() {
 if (!window.visualViewport || window.__chatKeyboardHandlerBound) return;
 window.__chatKeyboardHandlerBound = true;
 window.visualViewport.addEventListener('resize', adjustChatForKeyboard);
+window.visualViewport.addEventListener('scroll', adjustChatForKeyboard);
 }
 let __chatKBLast = -1;
 let __vvMaxH = 0; // запоминаем высоту экрана БЕЗ клавиатуры
@@ -219,16 +220,16 @@ const vh = Math.round(vv.height);
 if (vh > __vvMaxH) __vvMaxH = vh;
 // высота клавиатуры = насколько экран стал ниже максимума
 const kb = __vvMaxH > 0 ? (__vvMaxH - vh) : 0;
-if (kb === __chatKBLast) return;
-__chatKBLast = kb;
 if (kb > 150) {
 page.style.setProperty('height', vh + 'px', 'important');
-window.scrollTo(0, 0); // iOS: не даём странице уехать под клавиатуру
+// компенсация сдвига визуального вьюпорта iOS — шапка стоит на месте
+page.style.setProperty('top', vv.offsetTop + 'px', 'important');
+window.scrollTo(0, 0);
 } else {
 page.style.removeProperty('height');
 page.style.removeProperty('top');
 }
-scrollChatToBottom();
+if (kb !== __chatKBLast) { __chatKBLast = kb; scrollChatToBottom(); }
 }
 function autoGrowChatInput(el) {
 el.style.setProperty('height', 'auto', 'important');
