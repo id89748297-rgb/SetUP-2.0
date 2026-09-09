@@ -114,6 +114,8 @@ document.getElementById('chat-input').value = '';
 showPage('page-team-chat');
 setupChatKeyboardHandling();
 setupChatFixedAreasTouchBlock();
+setupChatTouchGuard();
+setupChatFocusPin();
 lockBodyScroll();
 setTimeout(adjustChatForKeyboard, 50);
 if (!chatMessagesCache[teamId]) chatMessagesCache[teamId] = [];
@@ -151,6 +153,47 @@ const block = (e) => { e.preventDefault(); };
 if (header) header.addEventListener('touchmove', block, { passive: false });
 if (inputBar) inputBar.addEventListener('touchmove', block, { passive: false });
 }
+function setupChatTouchGuard() {
+if (window.__chatTouchGuardBound) return;
+window.__chatTouchGuardBound = true;
+const page = document.getElementById('page-team-chat');
+if (!page) return;
+page.addEventListener('touchmove', (e) => {
+const list = document.getElementById('chat-messages-list');
+// жест не по списку сообщений (по шапке, полю ввода, пустому месту) — глушим
+if (!list || !list.contains(e.target)) { e.preventDefault(); return; }
+// список пуст или короткий — прокручивать нечего, глушим
+const canScroll = list.scrollHeight > list.clientHeight + 1;
+if (!canScroll) { e.preventDefault(); return; }
+// список на краю, а жест тянет дальше — глушим, чтобы не дёргать страницу
+const atTop = list.scrollTop <= 0;
+const atBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 1;
+if (page.__lastTouchY !== undefined) {
+const dy = e.touches[0].clientY - page.__lastTouchY;
+if ((atTop && dy > 0) || (atBottom && dy < 0)) e.preventDefault();
+}
+page.__lastTouchY = e.touches[0].clientY;
+}, { passive: false });
+page.addEventListener('touchend', () => { page.__lastTouchY = undefined; }, { passive: true });
+}
+function setupChatFocusPin() {
+if (window.__chatFocusPinBound) return;
+window.__chatFocusPinBound = true;
+const input = document.getElementById('chat-input');
+if (!input) return;
+input.addEventListener('focus', () => {
+// iOS при появлении клавиатуры прокручивает страницу к полю ввода —
+// возвращаем прокрутку в ноль несколько раз, пока клавиатура выезжает
+[0, 100, 300, 600].forEach(ms => setTimeout(() => {
+const page = document.getElementById('page-team-chat');
+if (page && page.classList.contains('active')) window.scrollTo(0, 0);
+}, ms));
+});
+input.addEventListener('blur', () => setTimeout(() => {
+const page = document.getElementById('page-team-chat');
+if (page && page.classList.contains('active')) window.scrollTo(0, 0);
+}, 100));
+}
 function setupChatKeyboardHandling() {
 if (!window.visualViewport || window.__chatKeyboardHandlerBound) return;
 window.__chatKeyboardHandlerBound = true;
@@ -166,6 +209,7 @@ if (Math.abs(kb - __chatKBLast) < 80) return; // дрожание адресно
 __chatKBLast = kb;
 if (kb > 150) {
 page.style.setProperty('height', vv.height + 'px', 'important');
+window.scrollTo(0, 0); // iOS: не даём странице уехать под клавиатуру
 } else {
 page.style.removeProperty('height');
 page.style.removeProperty('top');
