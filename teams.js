@@ -161,17 +161,13 @@ function adjustChatForKeyboard() {
 const page = document.getElementById('page-team-chat');
 if (!page || !page.classList.contains('active') || !window.visualViewport) return;
 const vv = window.visualViewport;
-const header = document.getElementById('chat-page-header');
-const inputBar = document.getElementById('chat-input-bar');
-const list = document.getElementById('chat-messages-list');
 const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-const headerH = header ? header.offsetHeight : 0;
-const inputH = inputBar ? inputBar.offsetHeight : 0;
-if (header) header.style.setProperty('top', vv.offsetTop + 'px', 'important');
-if (inputBar) inputBar.style.setProperty('bottom', keyboardHeight + 'px', 'important');
-if (list) {
-list.style.setProperty('top', (vv.offsetTop + headerH) + 'px', 'important');
-list.style.setProperty('bottom', (keyboardHeight + inputH) + 'px', 'important');
+if (keyboardHeight > 0) {
+page.style.setProperty('height', vv.height + 'px', 'important');
+page.style.setProperty('top', vv.offsetTop + 'px', 'important');
+} else {
+page.style.removeProperty('height');
+page.style.removeProperty('top');
 }
 scrollChatToBottom();
 }
@@ -184,6 +180,8 @@ el.style.overflowY = el.scrollHeight > 98 ? 'auto' : 'hidden';
 function closeTeamChat() {
 currentChatTeamId = null;
 chatEditingMessageId = null;
+const pageEl = document.getElementById('page-team-chat');
+if (pageEl) { pageEl.style.removeProperty('height'); pageEl.style.removeProperty('top'); }
 showPage('page-home');
 unlockBodyScroll();
 }

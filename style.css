@@ -617,7 +617,8 @@ infinite; vertical-align: middle; }
 body.light .btn-refresh-back-color, body.dark-white .btn-refresh-back-color { background: #455a64 !important; color: #fff !important; }
 #chat-messages-list, #team-members-list { overscroll-behavior: contain; }
 #page-team-chat.active {
-display: block !important;
+display: flex !important;
+flex-direction: column;
 position: fixed !important;
 inset: 0;
 width: 100vw; height: 100dvh;
@@ -627,15 +628,15 @@ overflow: hidden;
 }
 body.light #page-team-chat.active { background: #F5F5DC; }
 .chat-page-header {
-position: fixed; top: 0; left: 0; right: 0; z-index: 30;
+flex-shrink: 0;
 display:flex; align-items:center; gap:10px; padding:10px 12px;
 padding-top: calc(10px + env(safe-area-inset-top));
 background: #121212; border-bottom:1px solid rgba(255,255,255,0.08);
 }
 body.light .chat-page-header { background: #F5F5DC; }
-#chat-input-bar { position: fixed; left: 0; right: 0; z-index: 30; background: #121212; }
+#chat-input-bar { flex-shrink: 0; background: #121212; }
 body.light #chat-input-bar { background: #F5F5DC; }
-#chat-messages-list { position: fixed; left: 0; right: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+#chat-messages-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
 .chat-page-header h2 { margin:0; font-size:16px; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 #modal-section-edit .btn-main { background: rgba(129, 212, 250, 0.5) !important; color: #fff !important; }
 #page-song-edit .btn-main, #modal-express-add .btn-main { background: rgba(129, 212, 250, 0.5) !important; color: #fff !important; }
