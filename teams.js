@@ -183,10 +183,10 @@ const input = document.getElementById('chat-input');
 if (!input) return;
 input.addEventListener('focus', () => {
 // iOS при появлении клавиатуры прокручивает страницу к полю ввода —
-// возвращаем прокрутку в ноль несколько раз, пока клавиатура выезжает
+// возвращаем прокрутку в ноль и пересчитываем размер, пока клавиатура выезжает
 [0, 100, 300, 600].forEach(ms => setTimeout(() => {
 const page = document.getElementById('page-team-chat');
-if (page && page.classList.contains('active')) window.scrollTo(0, 0);
+if (page && page.classList.contains('active')) { window.scrollTo(0, 0); adjustChatForKeyboard(); }
 }, ms));
 });
 input.addEventListener('blur', () => setTimeout(() => {
@@ -200,15 +200,19 @@ window.__chatKeyboardHandlerBound = true;
 window.visualViewport.addEventListener('resize', adjustChatForKeyboard);
 }
 let __chatKBLast = -1;
+let __vvMaxH = 0; // запоминаем высоту экрана БЕЗ клавиатуры
 function adjustChatForKeyboard() {
 const page = document.getElementById('page-team-chat');
 if (!page || !page.classList.contains('active') || !window.visualViewport) return;
 const vv = window.visualViewport;
-const kb = Math.round(window.innerHeight - vv.height);
-if (Math.abs(kb - __chatKBLast) < 80) return; // дрожание адресной строки — игнорируем
+const vh = Math.round(vv.height);
+if (vh > __vvMaxH) __vvMaxH = vh;
+// высота клавиатуры = насколько экран стал ниже максимума
+const kb = __vvMaxH > 0 ? (__vvMaxH - vh) : 0;
+if (kb === __chatKBLast) return;
 __chatKBLast = kb;
 if (kb > 150) {
-page.style.setProperty('height', vv.height + 'px', 'important');
+page.style.setProperty('height', vh + 'px', 'important');
 window.scrollTo(0, 0); // iOS: не даём странице уехать под клавиатуру
 } else {
 page.style.removeProperty('height');
@@ -226,6 +230,7 @@ function closeTeamChat() {
 currentChatTeamId = null;
 chatEditingMessageId = null;
 __chatKBLast = -1;
+__vvMaxH = 0;
 const pageEl = document.getElementById('page-team-chat');
 if (pageEl) { pageEl.style.removeProperty('height'); pageEl.style.removeProperty('top'); }
 showPage('page-home');
