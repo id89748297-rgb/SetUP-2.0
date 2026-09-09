@@ -185,14 +185,13 @@ const chatActive = () => {
 const page = document.getElementById('page-team-chat');
 return !!(page && page.classList.contains('active'));
 };
-// Сжатие страницы под клавиатуру ДО её появления (по памяти о прошлой высоте)
+// Сжатие страницы под клавиатуру в момент касания — ДО того, как iOS решит прокручивать
 const preshrink = () => {
 if (!chatActive() || __vvMaxH <= 0) return;
 let lastKb = parseInt(localStorage.getItem('clc_kb_height') || '0');
 if (!lastKb || lastKb < 100 || lastKb > __vvMaxH * 0.7) lastKb = Math.round(__vvMaxH * 0.42);
 const page = document.getElementById('page-team-chat');
 page.style.setProperty('height', (__vvMaxH - lastKb) + 'px', 'important');
-// страховка: если за 800 мс клавиатура не открылась — возвращаем полный размер
 setTimeout(() => {
 if (chatActive() && !__kbOpen && document.activeElement !== input) {
 page.style.removeProperty('height');
@@ -200,20 +199,18 @@ page.style.removeProperty('top');
 }
 }, 800);
 };
-// ТЕЛЕФОН: перехватываем конец тапа, сжимаем страницу и фокусируем поле вручную.
-// Браузер не «прицеливается» по пальцу, поэтому подъём поля ввода фокусу не мешает
-input.addEventListener('touchend', (e) => {
+['pointerdown', 'touchstart'].forEach(ev => {
+input.addEventListener(ev, preshrink, { passive: true });
+});
+// Конец тапа: ручной фокус-страховка. Никакого preventDefault — жест «настоящий»,
+// и клавиатура откроется, даже если браузер промазал по сдвинувшемуся полю
+input.addEventListener('touchend', () => {
 if (!chatActive()) return;
-e.preventDefault();
-preshrink();
 window.scrollTo(0, 0);
 input.focus();
 }, false);
-// МЫШЬ (компьютер): там прыжков нет — просто сжимаем при фокусе
 input.addEventListener('focusin', () => {
-if (!chatActive()) return;
-preshrink();
-window.scrollTo(0, 0);
+if (chatActive()) window.scrollTo(0, 0);
 });
 window.addEventListener('scroll', () => {
 if (chatActive() && window.scrollY !== 0) window.scrollTo(0, 0);
