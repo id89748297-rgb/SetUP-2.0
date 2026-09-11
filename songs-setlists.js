@@ -384,6 +384,20 @@ const newValue = input.value.trim();
 const originalValue = input.dataset.originalValue;
 if (newValue === '' || isNaN(parseInt(newValue))) { input.value = originalValue; } else { updateSongOrder(songId, newValue); }
 }
+function changeSongKeyInSetlist(songId, newKey) {
+const sl = setlists.find(x => x.id === currentSlId);
+if (!sl) return;
+const item = sl.songs.find(x => x.id === songId);
+if (!item || !newKey) return;
+// в командных сетлистах обычному участнику менять тональность нельзя
+if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); renderSlSongs(); return; }
+const s = songs.find(x => x.id === songId);
+// если выбрали оригинальную тональность песни — сбрасываем, чтобы шла за песней
+if (s && newKey === s.key) { item.key = null; } else { item.key = newKey; }
+saveToStorage();
+if (sl.teamId) syncSetlistIfTeam(sl);
+renderSlSongs();
+}
 function renderSlSongs() {
 const sl = setlists.find(x => x.id === currentSlId); const list = document.getElementById('sl-songs-list'); list.innerHTML = '';
 sl.songs.forEach((item, idx) => { const s = songs.find(x => x.id === item.id); if (!s) return; const div = document.createElement('div'); div.className = 'list-item'; div.draggable = true; div.dataset.index = idx;
