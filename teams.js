@@ -1046,9 +1046,11 @@ if (data.sectionNotes && data.sectionNotes[s.id]) sectionNotes[s.id] = data.sect
 if (data.inlineComments && data.inlineComments[s.id]) inlineComments[s.id] = data.inlineComments[s.id];
 });
 const cloudSetlists = data.setlists || [];
+const cloudIds = new Set(cloudSetlists.map(cs => cs.id));
 const existingById = {};
 setlists.filter(sl => sl.teamId === teamId && sl.fromTeamSync).forEach(sl => { existingById[sl.id] = sl; });
-setlists = setlists.filter(sl => !(sl.teamId === teamId && sl.fromTeamSync));
+// убираем и старые облачные копии, и ЛОКАЛЬНЫЕ дубликаты тех же сет-листов (тот же id) — иначе сет-лист задваивается
+setlists = setlists.filter(sl => !(sl.teamId === teamId && (sl.fromTeamSync || cloudIds.has(sl.id))));
 cloudSetlists.forEach(cloudSl => {
 const existing = existingById[cloudSl.id];
 const localIsNewer = existing && existing.localUpdatedAt && existing.localUpdatedAt > (cloudSl.sharedAt || 0);

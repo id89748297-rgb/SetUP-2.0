@@ -217,11 +217,12 @@ async function saveSetlist() {
     saveToStorage();
     closeModal('modal-setlist');
     delete document.getElementById('modal-setlist').dataset.teamId;
-   if (teamId) {
-        try {
-            await publishSetlistToTeamData(newSl, teamId);
-            saveToStorage();
-            showToast('✅ Сет-лист опубликован в команде', 'success');
+   if (teamId) {
+        try {
+            await publishSetlistToTeamData(newSl, teamId);
+            newSl.fromTeamSync = true; // сет-лист теперь живёт как командный (одна копия, без дублей)
+            saveToStorage();
+            showToast('✅ Сет-лист опубликован в команде', 'success');
         } catch (err) {
             console.error('Не удалось опубликовать сет-лист в команде:', err);
             showToast('⚠️ Не удалось опубликовать сет-лист в команде: ' + err.code, 'error');
