@@ -154,7 +154,7 @@ body.dark-white .theme-toggle:hover { background: #000000; }
 body.light .btn-logout-round { background: #e57373; color: #333; }
 body.dark-white .btn-logout-round { background: #ef5350; color: white; }
 .vl-worship-btn {
-background: #9575cd;
+background: #78909c;
 border: none;
 color: white;
 width: 48px;
@@ -170,10 +170,10 @@ font-weight: bold;
 touch-action: manipulation;
 transition: background 0.3s;
 }
-body.violet .vl-worship-btn { background: #757575; }
-body.light .vl-worship-btn { background: #7e57c2; color: #ffffff; }
-body.violet.light .vl-worship-btn { background: #616161; color: #ffffff; }
-body.dark-white .vl-worship-btn { background: #9575cd; color: #ffffff; }
+body.violet .vl-worship-btn { background: #78909c; }
+body.light .vl-worship-btn { background: #455a64; color: #ffffff; }
+body.violet.light .vl-worship-btn { background: #455a64; color: #ffffff; }
+body.dark-white .vl-worship-btn { background: #455a64; color: #ffffff; }
 .song-toolbar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; padding: 12px; background: #1e1e1e; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
 body.light .song-toolbar { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
 body.dark-white .song-toolbar { background: #1e1e1e; }
