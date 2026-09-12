@@ -390,8 +390,9 @@ const sl = setlists.find(x => x.id === currentSlId);
 if (!sl) return;
 const item = sl.songs.find(x => x.id === songId);
 if (!item || !newKey) return;
-// в командных сетлистах обычному участнику менять тональность нельзя
-if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); renderSlSongs(); return; }
+// в командных сетлистах обычному участнику менять тональность нельзя.
+// Роли могли ещё не загрузиться (teamRolesCache пуст) — в этом случае не блокируем.
+if (sl.teamId && teamRolesCache[sl.teamId] && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); renderSlSongs(); return; }
 const s = songs.find(x => x.id === songId);
 // если выбрали оригинальную тональность песни — сбрасываем, чтобы шла за песней
 if (s && newKey === s.key) { item.key = null; } else { item.key = newKey; }
