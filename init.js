@@ -107,7 +107,7 @@ btn.classList.add('spinning');
 } else if (state === 'ok') {
 btn.classList.remove('spinning');
 btn.classList.add('sync-ok');
-btn.innerText = '✔';
+btn.innerText = '✔\uFE0E'; // \uFE0E — текстовая галочка: эмодзи-версия на телефонах игнорирует белый цвет
 clearTimeout(window.__refreshOkTimer);
 window.__refreshOkTimer = setTimeout(() => {
 btn.classList.remove('sync-ok');
