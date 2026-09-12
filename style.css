@@ -481,11 +481,11 @@ pointer-events: none;
 from { transform: rotate(0deg); }
 to { transform: rotate(360deg); }
 }
-/* Синхронизация завершена — зелёный квадрат с галочкой */
+/* Синхронизация завершена — круглая зелёная кнопка с белой галочкой */
 .btn-refresh-round.sync-ok {
 background: #43a047 !important;
 color: #ffffff !important;
-border-radius: 8px;
+border-radius: 50%;
 pointer-events: none;
 }
 

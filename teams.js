@@ -1303,7 +1303,8 @@ const section = document.getElementById('share-to-team-section');
 const shareableTeams = teams.filter(t => t.id !== sl.teamId);
 let html = '';
 if (sl.teamId) {
-html += `<button class="btn-pastel" style="width: 100%; margin-bottom: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; text-align: left; color: #4caf50;" onclick="copySetlistToPersonal(${sl.id}); closeModal('modal-share-setlist');">📥 В мои сет-листы</button>`;
+html += `<button class="btn-pastel" style="width: 100%; margin-bottom: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid #444; text-align: left; color: #42a5f5;" onclick="updateSetlistInTeam(${sl.id})">🔄 Обновить изменения в команде</button>`;
+html += `<button class="btn-pastel" style="width: 100%; margin-bottom: 6px; text-align: left; color: #4caf50;" onclick="copySetlistToPersonal(${sl.id}); closeModal('modal-share-setlist');">📥 В мои сет-листы</button>`;
 }
 if (shareableTeams.length > 0) {
 html += `
@@ -1320,6 +1321,24 @@ html += `<p style="color: #888; font-size: 12px; margin-top: 10px; text-align: c
 }
 section.innerHTML = html;
 modal.classList.add('show');
+}
+// Отправить текущую (изменённую) версию сет-листа в его команду
+async function updateSetlistInTeam(setlistId) {
+const sl = setlists.find(x => x.id === setlistId);
+if (!sl || !sl.teamId) return;
+const team = teams.find(t => t.id === sl.teamId);
+if (!confirm(`Отправить текущую версию сет-листа «${sl.name}» в команду «${team ? team.name : ''}»?\nУ всех участников сет-лист обновится автоматически.`)) return;
+if (!db || !currentUser) { showToast('❌ Нет подключения к облаку', 'error'); return; }
+try {
+await publishSetlistToTeamData(sl, sl.teamId);
+sl.fromTeamSync = true;
+saveToStorage();
+closeModal('modal-share-setlist');
+showToast('✅ Обновление отправлено в команду', 'success');
+} catch (err) {
+console.error('update setlist in team failed:', err);
+showToast('❌ Не удалось обновить: ' + (err.code || err.message), 'error');
+}
 }
 function exportSetlistAsFile() {
 closeModal('modal-share-setlist');
@@ -1353,6 +1372,40 @@ function stripPersonalSettingsForTeam(item) {
     const clean = { ...item };
     TEAM_SYNC_EXCLUDE_FIELDS.forEach(f => delete clean[f]);
     return clean;
+}
+// Отправить/обновить одну песню в данных команды (транзакция, по образцу publishSetlistToTeamData)
+async function publishSongToTeam(song, teamId) {
+if (!db || !currentUser || !song || !teamId) return false;
+const clean = stripPersonalSettingsForTeam(song);
+const docRef = db.collection('teamData').doc(teamId);
+await db.runTransaction(async (tx) => {
+const doc = await tx.get(docRef);
+const data = doc.exists ? doc.data() : { songs: [], setlists: [], sectionNotes: {}, inlineComments: {} };
+const teamSongs = data.songs || [];
+const idx = teamSongs.findIndex(ts => ts.id === clean.id);
+if (idx !== -1) teamSongs[idx] = clean; else teamSongs.push(clean);
+const teamSectionNotes = data.sectionNotes || {};
+const teamInlineComments = data.inlineComments || {};
+if (sectionNotes[song.id] && Object.keys(sectionNotes[song.id]).length) teamSectionNotes[song.id] = sectionNotes[song.id];
+if (inlineComments[song.id] && Object.keys(inlineComments[song.id]).length) teamInlineComments[song.id] = inlineComments[song.id];
+tx.set(docRef, { songs: teamSongs, sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
+});
+return true;
+}
+// Синхронизировать песню во ВСЕ команды, где она используется (правка песни разъезжается по командам)
+function syncSongToAllTeams(song) {
+if (!db || !currentUser || !song) return;
+const teamIds = new Set();
+if (song.fromTeam) teamIds.add(song.fromTeam);
+setlists.forEach(sl => {
+if (sl.teamId && sl.songs && sl.songs.some(it => it.id === song.id)) teamIds.add(sl.teamId);
+});
+if (!teamIds.size) return;
+teamIds.forEach(teamId => {
+// обычному участнику менять данные команды нельзя
+if (teamRolesCache[teamId] && getMyRole(teamId) === 'member') return;
+publishSongToTeam(song, teamId).catch(err => console.error('song sync error:', teamId, err));
+});
 }
 async function publishSetlistToTeamData(sl, teamId) {
     if (!db || !currentUser) return false;

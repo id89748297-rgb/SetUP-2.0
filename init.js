@@ -100,8 +100,9 @@ const btn = document.querySelector('.page.active .btn-refresh-round') || documen
 if (!btn) return;
 if (btn.dataset.wasArrow === undefined) btn.dataset.wasArrow = btn.innerText || '↻';
 if (state === 'spin') {
+// крутится шестерёнка (стрелка не вращается никогда)
 btn.classList.remove('sync-ok');
-btn.innerText = btn.dataset.wasArrow;
+btn.innerText = '⚙';
 btn.classList.add('spinning');
 } else if (state === 'ok') {
 btn.classList.remove('spinning');
@@ -120,17 +121,17 @@ btn.innerText = btn.dataset.wasArrow;
 
 // === ФУНКЦИЯ ОБНОВЛЕНИЯ СТРАНИЦЫ ===
 function refreshPage(btnEl) {
-    // Стрелка крутится, пока страница перезагружается (без всплывающего окна)
+    // Вместо стрелки — крутящаяся шестерёнка, пока страница перезагружается
     if (btnEl) {
         btnEl.classList.remove('sync-ok');
         if (btnEl.dataset.wasArrow === undefined) btnEl.dataset.wasArrow = btnEl.innerText || '↻';
-        btnEl.innerText = btnEl.dataset.wasArrow;
+        btnEl.innerText = '⚙';
         btnEl.classList.add('spinning');
     }
 
     // Проверяем наличие интернета
     if (!navigator.onLine) {
-        if (btnEl) btnEl.classList.remove('spinning');
+        if (btnEl) { btnEl.classList.remove('spinning'); btnEl.innerText = btnEl.dataset.wasArrow || '↻'; }
         showToast('❌ Нет подключения к интернету. Синхронизация невозможна.', 'error');
         return;
     }

@@ -153,7 +153,9 @@ song.author = author;
 song.bpm = bpm;
 song.category = category;
 song.updatedAt = Date.now();
-} else { songs.push({id: getNextId(songs), title, chordpro, key, author, bpm, category, cloudId: generateCloudId(), createdAt: Date.now(), columns: currentColumns, fontSize}); } saveToStorage(); alert('✅ Песня сохранена!'); }
+} else { song = {id: getNextId(songs), title, chordpro, key, author, bpm, category, cloudId: generateCloudId(), createdAt: Date.now(), columns: currentColumns, fontSize}; songs.push(song); } saveToStorage(); alert('✅ Песня сохранена!');
+// синхронизируем правку во все команды, где песня используется
+if (typeof syncSongToAllTeams === 'function') syncSongToAllTeams(song); }
 goBackFromSongEdit(); currentSongId = null; const searchBox = document.getElementById('songs-search'); if (searchBox) searchBox.value = ''; renderSongs();
 }
 function switchTab(tab, el) { currentTab = tab; document.querySelectorAll('#home-view-setlists .tab-style').forEach(t => t.classList.remove('active')); el.classList.add('active'); renderSetlists(); saveAppState(); }
@@ -190,7 +192,7 @@ const isExpired = !sl.isArchived && isSetlistExpired(sl);
 const expiredClass = isExpired ? 'setlist-expired' : '';
 const sharedBadge = '';
 let actions = sl.isArchived ? `<button class="btn-icon" onclick="event.stopPropagation(); restoreSetlist(${sl.id})">↻</button><button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">️</button>` : `<button class="btn-icon" onclick="event.stopPropagation(); openEditSetlistModal(${sl.id})">✏️</button><button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '${sl.name.replace(/'/g, "\\'")}', false)">️🗑️</button>`;
-div.innerHTML = `<div class="item-left ${expiredClass}" style="min-width: 0; flex: 1;"><div class="item-title">${escapeHtml(sl.name)}${sharedBadge}</div><div style="font-size: 10px; color: ${isExpired ? '#ef5350' : '#888'}; margin-top: 2px;">${formatSetlistDate(sl.date, sl.time)} · ${sl.songs.length} песен</div></div><div class="item-actions" style="display: flex; gap: 4px;">${actions}</div>`;
+div.innerHTML = `<div class="item-left ${expiredClass}" style="min-width: 0; flex: 1;"><div style="min-width: 0; flex: 1;"><div class="item-title" style="${isExpired ? 'color: #ef5350;' : ''}">${escapeHtml(sl.name)}${sharedBadge}</div><div style="font-size: 10px; color: ${isExpired ? '#ef5350' : dateColor}; margin-top: 2px;">${formatSetlistDate(sl.date, sl.time)} · ${sl.songs.length} песен</div></div></div><div class="item-actions" style="display: flex; gap: 4px;">${actions}</div>`;
 div.onclick = () => clearSetlistSearchAndOpen(sl.id); list.appendChild(div); });
 updateCarouselBadges();
 }
