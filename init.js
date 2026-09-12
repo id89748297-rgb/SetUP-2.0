@@ -93,22 +93,49 @@ renderProfile(); // Перерисовываем профиль
 alert('❌ Ошибка: ' + error.message);
 }
 }
+// === СОСТОЯНИЕ КНОПКИ ОБНОВЛЕНИЯ (вместо всплывающих окон) ===
+// state: 'spin' — крутится (идёт синхронизация/обновление), 'ok' — зелёный квадрат (готово), 'idle' — обычная стрелка
+function setRefreshBtnState(state) {
+const btn = document.querySelector('.page.active .btn-refresh-round') || document.querySelector('.btn-refresh-round');
+if (!btn) return;
+if (btn.dataset.wasArrow === undefined) btn.dataset.wasArrow = btn.innerText || '↻';
+if (state === 'spin') {
+btn.classList.remove('sync-ok');
+btn.innerText = btn.dataset.wasArrow;
+btn.classList.add('spinning');
+} else if (state === 'ok') {
+btn.classList.remove('spinning');
+btn.classList.add('sync-ok');
+btn.innerText = '✔';
+clearTimeout(window.__refreshOkTimer);
+window.__refreshOkTimer = setTimeout(() => {
+btn.classList.remove('sync-ok');
+btn.innerText = btn.dataset.wasArrow;
+}, 1500);
+} else {
+btn.classList.remove('spinning', 'sync-ok');
+btn.innerText = btn.dataset.wasArrow;
+}
+}
+
 // === ФУНКЦИЯ ОБНОВЛЕНИЯ СТРАНИЦЫ ===
 function refreshPage(btnEl) {
-    // Запускаем анимацию вращения
+    // Стрелка крутится, пока страница перезагружается (без всплывающего окна)
     if (btnEl) {
+        btnEl.classList.remove('sync-ok');
+        if (btnEl.dataset.wasArrow === undefined) btnEl.dataset.wasArrow = btnEl.innerText || '↻';
+        btnEl.innerText = btnEl.dataset.wasArrow;
         btnEl.classList.add('spinning');
-        setTimeout(() => btnEl.classList.remove('spinning'), 1000);
     }
 
     // Проверяем наличие интернета
     if (!navigator.onLine) {
+        if (btnEl) btnEl.classList.remove('spinning');
         showToast('❌ Нет подключения к интернету. Синхронизация невозможна.', 'error');
         return;
     }
 
     // Если интернет есть — перезагружаем страницу
-    showToast('↻ Обновление страницы...', 'info');
     setTimeout(() => {
         location.reload();
     }, 600);

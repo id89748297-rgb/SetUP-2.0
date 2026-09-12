@@ -42,13 +42,14 @@ catch (e) { __savedStateForAuth = {}; }
         }
         loadUserAvatar();
 
-        // ✅ ЗАГРУЖАЕМ ОБЛАЧНЫЕ ДАННЫЕ В ФОНЕ (не блокируя UI)
-        showToast('↻ Синхронизация данных...', 'info');
+        // ✅ ЗАГРУЖАЕМ ОБЛАЧНЫЕ ДАННЫЕ В ФОНЕ (не блокируя UI) — стрелка обновления крутится
+        setRefreshBtnState('spin');
         loadUserDataFromCloud().then(() => {
-            showToast('✅ Данные синхронизированы', 'success');
-            syncPublicProfileToTeams();
-        }).catch(err => {
+            setRefreshBtnState('ok');
+            syncPublicProfileToTeams();
+        }).catch(err => {
             console.error('Ошибка синхронизации:', err);
+            setRefreshBtnState('idle');
             showToast('⚠️ Ошибка синхронизации. Данные загружены локально.', 'error');
         });
 

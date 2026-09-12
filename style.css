@@ -474,12 +474,19 @@ transition: background 0.2s, transform 0.1s ease;
 body.light .btn-refresh-round { background: #7e57c2; color: #ffffff; }
 body.dark-white .btn-refresh-round { background: #9575cd; color: white; }
 .btn-refresh-round.spinning {
-animation: spin-refresh 1s linear;
+animation: spin-refresh 1s linear infinite;
 pointer-events: none;
 }
 @keyframes spin-refresh {
 from { transform: rotate(0deg); }
 to { transform: rotate(360deg); }
+}
+/* Синхронизация завершена — зелёный квадрат с галочкой */
+.btn-refresh-round.sync-ok {
+background: #43a047 !important;
+color: #ffffff !important;
+border-radius: 8px;
+pointer-events: none;
 }
 
 /* === TOAST-УВЕДОМЛЕНИЯ === */
