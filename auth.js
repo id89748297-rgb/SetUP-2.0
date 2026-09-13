@@ -143,8 +143,8 @@ async function loginWithEmail() {
 // Register with Email/Password
 async function registerWithEmail() {
 const name = document.getElementById('register-name').value.trim();
-const email = document.getElementById('login-email').value.trim();
-const password = document.getElementById('login-password').value;
+const email = document.getElementById('reg-email').value.trim();
+const password = document.getElementById('reg-password').value;
 if (!name) {
 showAuthError('Введите имя');
 return;
@@ -158,17 +158,10 @@ showAuthError('Пароль должен быть минимум 6 символ�
 return;
 }
 try {
-// 1. Создаем пользователя в Firebase Auth
 const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-// 1.5 Сохраняем имя прямо в аккаунт Firebase Auth
 await userCredential.user.updateProfile({ displayName: name });
-// 2. Отправляем письмо для подтверждения (требует интернет!)
 await userCredential.user.sendEmailVerification();
 alert('✅ Аккаунт создан! Пожалуйста, проверьте почту и перейдите по ссылке для подтверждения.');
-console.log('📧 Письмо для подтверждения отправлено на', email);
-// ❗ НЕ сохраняем данные в Firestore здесь! 
-// Данные попадут в облако автоматически через saveToStorage() 
-// только ПОСЛЕ того, как onAuthStateChanged разрешит вход.
 } catch (error) {
 showAuthError(getAuthErrorMessage(error.code));
 }
@@ -204,8 +197,8 @@ async function resendVerification() {
     }
     return;
   }
-  const email = document.getElementById('login-email').value.trim();
-  const password = document.getElementById('login-password').value;
+    const email = (document.getElementById('login-email').value.trim() || document.getElementById('reg-email').value.trim());
+  const password = (document.getElementById('login-password').value || document.getElementById('reg-password').value);
   if (!email || !password) {
     showAuthError('Введите email и пароль в поля выше, затем нажмите ещё раз');
     return;
@@ -244,26 +237,6 @@ function getAuthErrorMessage(code) {
 }
 
 // Show register form
-function showRegisterForm() {
-  const nameField = document.getElementById('register-name');
-  if (nameField.style.display === 'none') {
-    nameField.style.display = 'block';
-    nameField.focus();
-    return;
-  }
-  if (confirm('Создать новый аккаунт?')) {
-    registerWithEmail();
-  }
-}
-
-// === УПРАВЛЕНИЕ СЕССИЯМИ (УСТРОЙСТВАМИ) ===
-let currentSessionId = localStorage.getItem('session_id');
-if (!currentSessionId) {
-    currentSessionId = window.crypto.randomUUID ? window.crypto.randomUUID() : Date.now().toString();
-    localStorage.setItem('session_id', currentSessionId);
-}
-
-let unsubscribeSessionWatch = null;
 
 async function registerSession() {
     if (!currentUser) return;

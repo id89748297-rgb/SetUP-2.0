@@ -346,9 +346,11 @@ syncSetlistIfTeam(sl);
 goBackFromSetlistDetail();
 }
 }
-function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x => x.id === id);
+function openSetlistDetail(id) { currentSlId = id; const sl = setlists.find(x => x.id === id); if (!sl) { showPage('page-home'); return; }
 document.getElementById('sl-detail-title').innerHTML = `<div style="font-size: 14px; font-weight: bold;">${escapeHtml(sl.name)}</div><div style="font-size: 12px; color: #888; font-weight: normal;">${formatSetlistDate(sl.date, sl.time)}</div>`;
-document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail'); }
+document.getElementById('sl-subtitle').innerText = 'Сет-лист'; renderSlSongs(); showPage('page-setlist-detail');
+// открытие командного сетлиста = его прочтение (для голубой галочки автора)
+if (sl.teamId && typeof markSetlistRead === 'function') markSetlistRead(sl); }
 function goBackFromSetlistDetail() {
 window.__suppressCarouselSwipeUntil = Date.now() + 400;
 const sl = setlists.find(x => x.id === currentSlId);

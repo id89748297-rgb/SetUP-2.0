@@ -28,36 +28,55 @@
 <body class="dark">
 <div class="toast-container" id="toast-container"></div>
 
-<!-- === AUTH PAGE === -->
+<!-- === СТРАНИЦА ВХОДА (2 вкладки со свайпом) === -->
 <div id="page-auth" class="page">
 <div class="header">
 <div class="header-left"></div>
 <div class="header-center">
 <h1 class="app-title">Worship SetUP</h1>
-<div class="app-subtitle">авторизация</div>
+<div class="app-subtitle">вход</div>
 </div>
 <div class="header-right">
 <button class="btn-refresh-round btn-refresh-back-color" onclick="refreshPage(this)" title="Обновить">↻</button>
-<button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙</button>
+<button class="theme-toggle" onclick="toggleTheme()">🌙</button>
 </div>
 </div>
-<div style="max-width: 400px; margin: 40px auto; padding: 20px;">
-<div style="text-align: center; margin-bottom: 30px;">
-<div style="font-size: 64px; margin-bottom: 10px;">🎵</div>
-<h2 style="color: #90caf9; margin-bottom: 10px;">Войдите в аккаунт</h2>
-<p style="color: #888; font-size: 14px;">Чтобы синхронизировать данные между устройствами</p>
+<div style="max-width: 400px; margin: 20px auto; padding: 0 16px 20px;">
+<div style="text-align: center; margin-bottom: 20px;">
+<div style="font-size: 56px; margin-bottom: 6px;">🎵</div>
+<p style="color: #888; font-size: 13px;">Синхронизация данных между устройствами</p>
 </div>
-<div id="auth-form-email">
-<input type="text" id="register-name" placeholder="Ваше имя" style="margin-bottom: 10px; display: none;">
-<input type="email" id="login-email" class="search-box" placeholder="Email" autocomplete="email">
-<input type="password" id="login-password" class="search-box" placeholder="Пароль" autocomplete="current-password">
-<button class="btn-main btn-accent-save" onclick="loginWithEmail()">Войти</button>
-<button class="btn-secondary" onclick="showRegisterForm()" style="width: 100%; margin-top: 10px;">📝 Создать аккаунт</button>
+
+<!-- Вкладки -->
+<div class="auth-tabs">
+<div class="auth-tab active" id="auth-tab-0" onclick="switchAuthTab(0)">Войти</div>
+<div class="auth-tab" id="auth-tab-1" onclick="switchAuthTab(1)">Регистрация</div>
 </div>
-<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #444;">
-<button class="btn-secondary" onclick="resetPassword()" style="width: 100%; margin-bottom: 10px; background: #546e7a;">🔑 Забыл пароль</button>
-<button class="btn-secondary" onclick="resendVerification()" style="width: 100%; background: #607d8b;">📧 Не приходит письмо?</button>
+
+<!-- Карусель из двух панелей -->
+<div class="auth-slider-viewport">
+<div class="auth-slider" id="auth-slider">
+<div class="auth-panel">
+<input type="email" id="login-email" class="search-box auth-input" placeholder="Почта" autocomplete="email">
+<input type="password" id="login-password" class="search-box auth-input" placeholder="Пароль" autocomplete="current-password">
+<button class="btn-main btn-accent-save auth-input" onclick="loginWithEmail()">Войти</button>
+<div class="auth-links">
+<span class="auth-link" onclick="resetPassword()">🔑 Забыли пароль?</span>
+<span class="auth-link" onclick="resendVerification()">📧 Не приходит письмо?</span>
 </div>
+</div>
+<div class="auth-panel">
+<input type="text" id="register-name" class="search-box auth-input" placeholder="Ваше имя" autocomplete="name">
+<input type="email" id="reg-email" class="search-box auth-input" placeholder="Почта" autocomplete="email">
+<input type="password" id="reg-password" class="search-box auth-input" placeholder="Пароль" autocomplete="new-password">
+<button class="btn-main btn-accent-save auth-input" onclick="registerWithEmail()">Создать аккаунт</button>
+<div class="auth-links">
+<span class="auth-link" onclick="resendVerification()">📧 Не приходит письмо?</span>
+</div>
+</div>
+</div>
+</div>
+
 <div id="auth-error" style="color: #ef5350; text-align: center; margin-top: 15px; display: none;"></div>
 </div>
 </div>

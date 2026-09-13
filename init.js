@@ -165,3 +165,34 @@ window.addEventListener('online', () => {
 window.addEventListener('offline', () => {
     showToast('❌ Потеряно подключение к интернету', 'error');
 });
+// === ВКЛАДКИ ВХОДА/РЕГИСТРАЦИИ СО СВАЙПОМ ===
+let __authTab = 0;
+function switchAuthTab(idx) {
+__authTab = idx;
+const slider = document.getElementById('auth-slider');
+if (slider) slider.style.transform = 'translateX(-' + (idx * 50) + '%)';
+for (let i = 0; i < 2; i++) {
+const tab = document.getElementById('auth-tab-' + i);
+if (tab) tab.classList.toggle('active', i === idx);
+}
+}
+(function setupAuthSwipe() {
+const slider = document.getElementById('auth-slider');
+if (!slider) return;
+let sx = 0, sy = 0, mode = 0; // mode: 0 неизвестно, 1 горизонталь, 2 вертикаль
+slider.addEventListener('touchstart', (e) => {
+sx = e.touches[0].clientX; sy = e.touches[0].clientY; mode = 0;
+}, { passive: true });
+slider.addEventListener('touchmove', (e) => {
+const dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+if (mode === 0 && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+mode = Math.abs(dx) > Math.abs(dy) ? 1 : 2;
+}
+}, { passive: true });
+slider.addEventListener('touchend', (e) => {
+if (mode !== 1) return;
+const dx = e.changedTouches[0].clientX - sx;
+if (dx < -50 && __authTab === 0) switchAuthTab(1);
+else if (dx > 50 && __authTab === 1) switchAuthTab(0);
+}, { passive: true });
+})();
