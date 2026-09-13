@@ -737,9 +737,23 @@ flex: 1;
 min-width: 0;
 margin: 0;
 }
-.btn-split-diag .btn-pastel.cut-left {
-clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%);
+/* Обёртка рисует рамку, огибающую скошенный край */
+.btn-cut-edge {
+flex: 1;
+min-width: 0;
+margin: 0;
+padding: 1px;
+background: rgba(179, 157, 219, 0.3);
+border-radius: 10px;
 }
-.btn-split-diag .btn-pastel.cut-right {
-clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%);
+body.light .btn-cut-edge { background: rgba(126, 87, 194, 0.5); }
+.btn-cut-edge.left { clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
+.btn-cut-edge.right { clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%); }
+.btn-cut-edge .btn-pastel {
+width: 100%;
+margin: 0;
+border: none;
+border-radius: 9px;
 }
+.btn-cut-edge.left .btn-pastel { clip-path: polygon(0 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
+.btn-cut-edge.right .btn-pastel { clip-path: polygon(5px 0, 100% 0, 100% 100%, 0 100%); }

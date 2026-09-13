@@ -1226,8 +1226,8 @@ let html = `<div style="padding: 10px 0;">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">
 <button class="btn-pastel" style="margin:0;" onclick="openTeamMembers('${team.id}')">👥 Участники</button>
 <div class="btn-split-diag">
-<button class="btn-pastel cut-left" onclick="showTeamInvite('${team.id}')">🔗 Пригласить</button>
-<button class="btn-pastel cut-right" onclick="teamActionsPressed('${team.id}')">⚙ Действия</button>
+<div class="btn-cut-edge left"><button class="btn-pastel" onclick="showTeamInvite('${team.id}')">🔗 Пригласить</button></div>
+<div class="btn-cut-edge right"><button class="btn-pastel" onclick="teamActionsPressed('${team.id}')">⚙ Действия</button></div>
 </div>
 </div>`;
 html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">`;
