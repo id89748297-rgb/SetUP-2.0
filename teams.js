@@ -77,6 +77,9 @@ document.body.style.right = '';
 document.body.style.width = '';
 window.scrollTo(0, window.__bodyScrollY || 0);
 }
+function teamActionsPressed(teamId) {
+showToast('⚙️ Меню действий команды — скоро', 'success');
+}
 function applyFullscreenModalStyle(modalId) {
 const modal = document.getElementById(modalId);
 if (!modal) return;
@@ -1222,7 +1225,10 @@ let html = `<div style="padding: 10px 0;">
 </div>
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">
 <button class="btn-pastel" style="margin:0;" onclick="openTeamMembers('${team.id}')">👥 Участники</button>
-<button class="btn-pastel" style="margin:0;" onclick="showTeamInvite('${team.id}')">🔗 Пригласить</button>
+<div class="btn-split-diag">
+<button class="btn-pastel cut-left" onclick="showTeamInvite('${team.id}')">🔗 Пригласить</button>
+<button class="btn-pastel cut-right" onclick="teamActionsPressed('${team.id}')">⚙ Действия</button>
+</div>
 </div>`;
 html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">`;
 html += `<button class="btn-pastel" style="margin:0;${!isArchiveMode ? 'background:rgba(179,157,219,0.35);font-weight:bold;' : 'opacity:0.6;'}" onclick="toggleTeamArchive('${team.id}')">Актуальные (${activeSetlists.length})</button>`;

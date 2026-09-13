@@ -38,6 +38,7 @@ async function syncPublicProfileToTeams() {
 }
  
 let currentMembersIds = [];
+let currentMembersJoined = {};
  
 // Самопочинка для команд, созданных/полученных ДО появления подколлекции members:
 // создаёт свой документ-пропуск teamRegistry/{teamId}/members/{uid} для каждой
@@ -96,6 +97,8 @@ saveAppState();
         })
         .then(membersSnap => {
             currentMembersIds = membersSnap.docs.map(d => d.id);
+currentMembersJoined = {};
+membersSnap.docs.forEach(d => { currentMembersJoined[d.id] = (d.data() && d.data().joinedAt) || 0; });
             return db.collection('teamRegistry').doc(teamId).collection('private').doc('profiles').get();
         })
         .then(doc => {
@@ -229,7 +232,8 @@ function renderTeamMembersList() {
         return { uid, p, label: fullName || 'Без имени' };
     });
     if (query) rows = rows.filter(r => r.label.toLowerCase().includes(query));
-    rows.sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+    const joined = currentMembersJoined || {};
+rows.sort((a, b) => (joined[b.uid] || 0) - (joined[a.uid] || 0));
     if (rows.length === 0) {
         list.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Никого не найдено</div>';
         return;
