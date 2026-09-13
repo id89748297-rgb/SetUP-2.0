@@ -677,36 +677,40 @@ body.light .auth-panel { background: #fff; }
 .auth-links { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; align-items: center; }
 .auth-link { color: #90caf9; font-size: 13px; cursor: pointer; text-align: center; user-select: none; }
 body.light .auth-link { color: #0d47a1; }
-/* === УЧАСТНИКИ: шапка как в чате + поиск закреплён сверху === */
+/* === УЧАСТНИКИ: высокая шапка под чёлкой, поиск как раньше === */
 #modal-team-members .modal-content-full {
 display: flex;
 flex-direction: column;
 height: 100%;
 max-height: 100%;
 overflow: hidden;
+background: #121212;
 }
+body.light #modal-team-members .modal-content-full { background: #F5F5DC; }
 #modal-team-members .team-members-header {
 display: flex;
 align-items: center;
 gap: 10px;
-padding: 10px 12px;
-padding-top: calc(10px + env(safe-area-inset-top, 0px));
+padding: 16px 12px 10px 12px;
+margin-bottom: 0;
+padding-top: calc(16px + env(safe-area-inset-top, 0px));
 background: #121212;
-border-bottom: 1px solid rgba(255,255,255,0.08);
 flex-shrink: 0;
+border-bottom: none;
+box-shadow: none;
 }
 body.light #modal-team-members .team-members-header { background: #F5F5DC; }
 #modal-team-members .team-members-header .btn-back {
-padding: 8px 12px;
-min-width: 40px;
-min-height: 40px;
-font-size: 16px;
+padding: 10px 14px;
+min-width: 44px;
+min-height: 44px;
+font-size: 18px;
 }
 #modal-team-members .search-wrap {
 flex-shrink: 0;
-padding: 8px 12px;
 background: #121212;
-border-bottom: 1px solid rgba(255,255,255,0.08);
+border-bottom: none;
+box-shadow: none;
 }
 body.light #modal-team-members .search-wrap { background: #F5F5DC; }
 #modal-team-members #team-members-list {
