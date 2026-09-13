@@ -235,7 +235,14 @@ function getAuthErrorMessage(code) {
   };
   return messages[code] || 'Ошибка авторизации';
 }
+// === УПРАВЛЕНИЕ СЕССИЯМИ (УСТРОЙСТВАМИ) ===
+let currentSessionId = localStorage.getItem('session_id');
+if (!currentSessionId) {
+    currentSessionId = window.crypto.randomUUID ? window.crypto.randomUUID() : Date.now().toString();
+    localStorage.setItem('session_id', currentSessionId);
+}
 
+let unsubscribeSessionWatch = null;
 // Show register form
 
 async function registerSession() {
