@@ -479,10 +479,10 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <!-- === МОДАЛКА: УЧАСТНИКИ КОМАНДЫ === -->
 <div id="modal-team-members" class="modal modal-fullscreen">
 <div class="modal-content modal-content-full">
-<div class="team-members-header">
-<div id="team-members-avatar" class="team-members-header-avatar">🎸</div>
-<h2 id="team-members-name" style="margin:0;flex:1;"></h2>
-<button class="btn-icon" onclick="closeTeamMembers()">✕</button>
+<div class="team-members-header" id="team-members-header">
+<button class="btn-back" onclick="closeTeamMembers()">←</button>
+<div id="team-members-header-avatar-wrapper" style="display:flex;align-items:center;"><div id="team-members-avatar" class="team-members-header-avatar"></div></div>
+<h2 id="team-members-name" style="margin:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></h2>
 </div>
 <div class="search-wrap"><input type="text" id="team-members-search" class="search-box" placeholder="🔍 Поиск участника..." oninput="renderTeamMembersList(); toggleSearchClearBtn(this)"><button type="button" class="search-clear-btn" onclick="clearSearchInput('team-members-search', renderTeamMembersList)">✕</button></div>
 <div id="team-members-list"></div>
