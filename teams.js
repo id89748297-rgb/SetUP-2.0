@@ -77,8 +77,202 @@ document.body.style.right = '';
 document.body.style.width = '';
 window.scrollTo(0, window.__bodyScrollY || 0);
 }
+// === ЖУРНАЛ ДЕЙСТВИЙ КОМАНДЫ (доступен админам и владельцу) ===
+let currentActionsTeamId = null;
+let currentActionsProfiles = {};
+let currentActionsItems = [];
+let actionsListenerUnsub = null;
+const TEAM_ACTION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 дней
+
 function teamActionsPressed(teamId) {
-showToast('⚙️ Меню действий команды — скоро', 'success');
+openTeamActions(teamId);
+}
+// Записать событие в журнал команды (не блокирует основной код)
+function logTeamAction(teamId, text) {
+if (!db || !currentUser || !teamId || !text) return;
+db.collection('teamRegistry').doc(teamId).collection('actions').add({
+uid: currentUser.uid,
+text: text,
+createdAt: Date.now()
+}).catch(err => console.error('Не удалось записать действие команды:', err));
+}
+function formatActionTime(ts) {
+const d = new Date(ts || 0);
+const now = new Date();
+const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+const hhmm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+if (d.toDateString() === now.toDateString()) return 'сегодня, ' + hhmm;
+const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+if (d.toDateString() === yesterday.toDateString()) return 'вчера, ' + hhmm;
+if (d.getFullYear() === now.getFullYear()) return d.getDate() + ' ' + months[d.getMonth()] + ', ' + hhmm;
+return d.getDate() + ' ' + months[d.getMonth()] + ' ' + d.getFullYear() + ', ' + hhmm;
+}
+function openTeamActions(teamId) {
+closeRoleMenu();
+if (typeof closeChatMsgMenuPopup === 'function') closeChatMsgMenuPopup();
+if (typeof closeClearChatMenuPopup === 'function') closeClearChatMenuPopup();
+if (typeof closeTeamPinMenu === 'function') closeTeamPinMenu();
+const role = getMyRole(teamId);
+if (role !== 'owner' && role !== 'admin') { showToast('⛔ Недоступно для вашей роли', 'error'); return; }
+applyFullscreenModalStyle('modal-team-actions');
+lockBodyScroll();
+setupModalSwipeClose('modal-team-actions', closeTeamActions);
+currentActionsTeamId = teamId;
+const actionsTeam = teams.find(t => t.id === teamId);
+const actionsAvatarEl = document.getElementById('team-actions-avatar');
+if (actionsAvatarEl) actionsAvatarEl.innerHTML = (actionsTeam && actionsTeam.avatar) ? `<img src="${escapeHtml(actionsTeam.avatar)}" alt="">` : '⚙';
+// Свежие данные команды (аватар/название могли измениться)
+if (db && actionsTeam) {
+db.collection('teamRegistry').doc(teamId).get().then(regDoc => {
+if (!regDoc.exists || currentActionsTeamId !== teamId) return;
+const regData = regDoc.data();
+if (regData.avatar !== undefined) actionsTeam.avatar = regData.avatar;
+if (actionsAvatarEl) actionsAvatarEl.innerHTML = actionsTeam.avatar ? `<img src="${escapeHtml(actionsTeam.avatar)}" alt="">` : '⚙';
+}).catch(() => {});
+}
+// Профили авторов — из общего кеша участников
+let mCache = {};
+try { mCache = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}'); } catch {}
+const cachedProfiles = mCache[teamId];
+currentActionsProfiles = cachedProfiles ? cachedProfiles.profiles : {};
+currentMembersProfiles = currentActionsProfiles; // openMemberProfile читает эту переменную
+// Кеш событий — показываем сразу, без сети
+let aCache = {};
+try { aCache = JSON.parse(localStorage.getItem('clc_team_actions_cache') || '{}'); } catch {}
+currentActionsItems = (aCache[teamId] || []).filter(a => Date.now() - (a.createdAt || 0) < TEAM_ACTION_TTL_MS);
+renderTeamActionsList();
+document.getElementById('modal-team-actions').classList.add('show');
+saveAppState();
+if (!db || !currentUser) return;
+// Свежие профили
+db.collection('teamRegistry').doc(teamId).collection('private').doc('profiles').get()
+.then(doc => {
+if (doc.exists) {
+currentActionsProfiles = doc.data() || {};
+currentMembersProfiles = currentActionsProfiles;
+renderTeamActionsList();
+}
+}).catch(() => {});
+// Чистим просроченные записи (старше 30 дней)
+purgeOldTeamActions(teamId);
+// Живой слушатель событий
+if (actionsListenerUnsub) { actionsListenerUnsub(); actionsListenerUnsub = null; }
+actionsListenerUnsub = db.collection('teamRegistry').doc(teamId).collection('actions')
+.orderBy('createdAt', 'desc').limit(200)
+.onSnapshot(snap => {
+currentActionsItems = snap.docs.map(d => Object.assign({ id: d.id }, d.data()))
+.filter(a => Date.now() - (a.createdAt || 0) < TEAM_ACTION_TTL_MS);
+try {
+const c = JSON.parse(localStorage.getItem('clc_team_actions_cache') || '{}');
+c[teamId] = currentActionsItems;
+localStorage.setItem('clc_team_actions_cache', JSON.stringify(c));
+} catch {}
+if (currentActionsTeamId === teamId) renderTeamActionsList();
+}, err => console.error('Ошибка журнала действий:', err));
+}
+function renderTeamActionsList() {
+const list = document.getElementById('team-actions-list');
+if (!list) return;
+const arr = currentActionsItems || [];
+if (!arr.length) {
+list.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Пока нет событий</div>';
+return;
+}
+list.innerHTML = arr.map(a => {
+const p = currentActionsProfiles[a.uid] || {};
+const fullName = [p.displayName, p.lastName].filter(Boolean).join(' ').trim() || 'Участник';
+const avatarHtml = p.avatar
+? `<img src="${escapeHtml(p.avatar)}" class="team-member-avatar" alt="">`
+: `<div class="team-member-avatar-placeholder">👤</div>`;
+return `<div class="list-item" style="cursor:pointer;" onclick="openMemberProfile('${a.uid}')">
+<div class="item-left">
+${avatarHtml}
+<div style="min-width:0;flex:1;">
+<div class="item-title">${escapeHtml(fullName)}</div>
+<div style="color:#aaa;font-size:13px;margin-top:2px;">${escapeHtml(a.text || '')}</div>
+<div style="color:#777;font-size:11px;margin-top:3px;">${formatActionTime(a.createdAt)}</div>
+</div>
+</div>
+</div>`;
+}).join('');
+}
+function closeTeamActions() {
+if (actionsListenerUnsub) { actionsListenerUnsub(); actionsListenerUnsub = null; }
+closeModal('modal-team-actions');
+currentActionsTeamId = null;
+currentActionsItems = [];
+unlockBodyScroll();
+saveAppState();
+}
+// Удаление из облака записей старше 30 дней (правила разрешают это любому участнику)
+async function purgeOldTeamActions(teamId) {
+if (!db || !currentUser) return;
+try {
+const cutoff = Date.now() - TEAM_ACTION_TTL_MS;
+const snap = await db.collection('teamRegistry').doc(teamId).collection('actions')
+.where('createdAt', '<', cutoff).limit(50).get();
+if (snap.empty) return;
+const batch = db.batch();
+snap.docs.forEach(d => batch.delete(d.ref));
+await batch.commit();
+} catch (err) { /* не критично */ }
+}
+// Долгое нажатие кнопки «Действия» (владелец) → меню очистки истории
+function startTeamActionsPress(ev, teamId) {
+const x = ev.touches ? ev.touches[0].clientX : ev.clientX;
+const y = ev.touches ? ev.touches[0].clientY : ev.clientY;
+window.__actionsPressFired = false;
+window.__actionsPressTimer = setTimeout(() => {
+if (getMyRole(teamId) !== 'owner') return;
+window.__actionsPressFired = true;
+if (navigator.vibrate) navigator.vibrate(30);
+showClearActionsMenu(teamId, x, y);
+}, 600);
+}
+function cancelTeamActionsPress() { clearTimeout(window.__actionsPressTimer); }
+function showClearActionsMenu(teamId, x, y) {
+closeClearActionsMenu();
+const overlay = document.createElement('div');
+overlay.id = 'clear-actions-overlay';
+overlay.style.cssText = 'position:fixed;inset:0;z-index:9998;background:transparent;';
+overlay.onclick = closeClearActionsMenu;
+document.body.appendChild(overlay);
+const menu = document.createElement('div');
+menu.id = 'clear-actions-menu';
+menu.style.cssText = 'position:fixed;background:#2a2a2a;border-radius:10px;overflow:hidden;z-index:9999;box-shadow:0 4px 14px rgba(0,0,0,0.5);min-width:190px;';
+menu.innerHTML = '<div class="clear-actions-option" style="padding:13px 18px;color:#ef5350;font-size:15px;">🗑 Очистить историю</div>'
++ '<div style="height:1px;background:rgba(255,255,255,0.1);"></div>'
++ '<div class="clear-actions-option" style="padding:13px 18px;color:#eee;font-size:15px;">Отмена</div>';
+document.body.appendChild(menu);
+const opts = menu.querySelectorAll('.clear-actions-option');
+opts[0].onclick = (e) => { e.stopPropagation(); closeClearActionsMenu(); clearTeamActionsHistory(teamId); };
+opts[1].onclick = (e) => { e.stopPropagation(); closeClearActionsMenu(); };
+menu.style.left = Math.min(x, window.innerWidth - 200) + 'px';
+menu.style.top = Math.min(y, window.innerHeight - 120) + 'px';
+}
+function closeClearActionsMenu() {
+const menu = document.getElementById('clear-actions-menu'); if (menu) menu.remove();
+const overlay = document.getElementById('clear-actions-overlay'); if (overlay) overlay.remove();
+}
+async function clearTeamActionsHistory(teamId) {
+if (!db || !currentUser) return;
+try {
+const snap = await db.collection('teamRegistry').doc(teamId).collection('actions').limit(400).get();
+const batch = db.batch();
+snap.docs.forEach(d => batch.delete(d.ref));
+await batch.commit();
+try {
+const c = JSON.parse(localStorage.getItem('clc_team_actions_cache') || '{}');
+delete c[teamId];
+localStorage.setItem('clc_team_actions_cache', JSON.stringify(c));
+} catch {}
+currentActionsItems = [];
+if (currentActionsTeamId === teamId) renderTeamActionsList();
+showToast('✅ История действий очищена', 'success');
+} catch (err) {
+console.error('Не удалось очистить историю:', err);
+showToast('⚠️ Не удалось очистить: ' + (err.code || err.message), 'error');
+}
 }
 function applyFullscreenModalStyle(modalId) {
 const modal = document.getElementById(modalId);
@@ -684,6 +878,7 @@ if (editingTeamId) {
 const team = teams.find(t => t.id === editingTeamId);
 if (team) {
 const editTimestamp = Date.now();
+const prevName = team.name, prevPassword = team.password, prevAvatar = team.avatar;
 team.name = newName;
 team.password = newPassword;
 team.updatedAt = editTimestamp;
@@ -691,7 +886,12 @@ if (avatarData !== undefined) team.avatar = avatarData;
 if (db && currentUser) {
 console.log('DEBUG правка команды:', { teamId: team.id, uid: currentUser.uid, размерАватарки: avatarData ? avatarData.length : 'без изменений' });
 db.collection('teamRegistry').doc(team.id).set({ name: newName, password: newPassword, avatar: avatarData !== undefined ? avatarData : (team.avatar || null), createdAt: team.createdAt || Date.now(), updatedAt: editTimestamp, members: firebase.firestore.FieldValue.arrayUnion(currentUser.uid) }, { merge: true })
-.then(() => showToast('✅ Команда обновлена', 'success'))
+.then(() => {
+showToast('✅ Команда обновлена', 'success');
+if (newName !== prevName) logTeamAction(team.id, 'Название команды изменено');
+if (newPassword !== prevPassword) logTeamAction(team.id, 'Пароль команды изменён');
+if (avatarData !== undefined && avatarData !== prevAvatar) logTeamAction(team.id, 'Аватарка команды обновлена');
+})
 .catch(err => { console.error('teamRegistry sync failed:', err); showToast('⚠️ Не синхронизировано с облаком: ' + err.message, 'error'); });
 }
 }
@@ -1226,8 +1426,8 @@ let html = `<div style="padding: 10px 0;">
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">
 <button class="btn-pastel" style="margin:0;" onclick="openTeamMembers('${team.id}')">👥 Участники</button>
 <div class="btn-split-diag">
-<div class="btn-cut-edge left"><button class="btn-pastel" onclick="showTeamInvite('${team.id}')">🔗 Пригласить</button></div>
-<div class="btn-cut-edge right"><button class="btn-pastel" onclick="teamActionsPressed('${team.id}')">⚙ Действия</button></div>
+<button class="btn-pastel cut-left" onclick="showTeamInvite('${team.id}')">🔗 Пригласить</button>
+<button class="btn-pastel cut-right" ontouchstart="startTeamActionsPress(event,'${team.id}')" ontouchend="cancelTeamActionsPress()" ontouchcancel="cancelTeamActionsPress()" onmousedown="startTeamActionsPress(event,'${team.id}')" onmouseup="cancelTeamActionsPress()" onmouseleave="cancelTeamActionsPress()" onclick="if(window.__actionsPressFired){window.__actionsPressFired=false;return;} teamActionsPressed('${team.id}')">⚙ Действия</button>
 </div>
 </div>`;
 html += `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:15px;">`;
@@ -1452,8 +1652,9 @@ async function publishSetlistToTeamData(sl, teamId) {
             requiredReaders,
             readBy: [currentUser.uid]
         });
-    } catch (err) { console.error('Не удалось обновить статус прочтения:', err); }
-    return true;
+    } catch (err) { console.error('Не удалось обновить статус прочтения:', err); }
+    logTeamAction(teamId, `Сет-лист «${sl.name}» обновлён`);
+    return true;
 }
 async function removeSetlistFromTeamData(setlistId, teamId) {
     if (!db || !currentUser || !teamId) return;

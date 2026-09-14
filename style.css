@@ -104,7 +104,7 @@ body.dark-white .btn-pastel { background: rgba(179, 157, 219, 0.15); color: #b39
 body.dark-white .btn-pastel:hover { background: rgba(179, 157, 219, 0.25); }
 .home-actions-row { display: flex; gap: 10px; margin-bottom: 15px; }
 .home-actions-row button { flex: 1; min-width: 0; }
-.home-actions-row.row-top { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; }
+.home-actions-row.row-top { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .home-actions-row.row-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .tab { flex: 1; padding: 14px; text-align: center; background: #333; color: #eee; border-radius: 10px; cursor: pointer; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 16px; touch-action: manipulation; line-height: 1.2; }
 body.light .tab { background: rgba(126, 87, 194, 0.15); color: #4527a0; }
@@ -737,23 +737,14 @@ flex: 1;
 min-width: 0;
 margin: 0;
 }
-/* Обёртка рисует рамку, огибающую скошенный край */
-.btn-cut-edge {
-flex: 1;
-min-width: 0;
-margin: 0;
-padding: 1px;
-background: rgba(179, 157, 219, 0.3);
-border-radius: 10px;
-}
-body.light .btn-cut-edge { background: rgba(126, 87, 194, 0.5); }
-.btn-cut-edge.left { clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 0 100%); }
-.btn-cut-edge.right { clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%); }
-.btn-cut-edge .btn-pastel {
-width: 100%;
-margin: 0;
-border: none;
-border-radius: 9px;
-}
-.btn-cut-edge.left .btn-pastel { clip-path: polygon(0 0, 100% 0, calc(100% - 5px) 100%, 0 100%); }
-.btn-cut-edge.right .btn-pastel { clip-path: polygon(5px 0, 100% 0, 100% 100%, 0 100%); }
+/* === ЖУРНАЛ ДЕЙСТВИЙ КОМАНДЫ === */
+#modal-team-actions.modal-fullscreen { padding: 0 !important; }
+#modal-team-actions .modal-content-full { display: flex; flex-direction: column; height: 100%; max-height: 100%; overflow: hidden; background: #121212; }
+body.light #modal-team-actions .modal-content-full { background: #F5F5DC; }
+#modal-team-actions .team-members-header { display: flex; align-items: center; gap: 10px; padding: 10px 12px; padding-top: calc(10px + env(safe-area-inset-top, 0px)); margin-bottom: 0; background: #121212; flex-shrink: 0; border-bottom: none; box-shadow: none; }
+body.light #modal-team-actions .team-members-header { background: #F5F5DC; }
+#modal-team-actions .team-members-header h2 { margin: 0; font-size: 16px; flex: 1; min-width: 0; }
+#modal-team-actions #team-actions-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 0 0 20px 0; }
+#modal-team-actions .list-item { margin-bottom: 0; border-radius: 0; box-shadow: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
+#modal-team-actions .list-item:last-child { border-bottom: none; }
+body.light #modal-team-actions .list-item { border-bottom: 1px solid rgba(0,0,0,0.08); }

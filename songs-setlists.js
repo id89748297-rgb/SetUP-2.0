@@ -275,6 +275,7 @@ sl.isArchived = true;
 if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; }
 saveToStorage();
 syncSetlistIfTeam(sl);
+if (sl.teamId) logTeamAction(sl.teamId, `Сет-лист «${sl.name}» перенесён в архив`);
 if (!document.getElementById('page-setlist-detail').classList.contains('active')) {
 renderSetlists();
 if (sl.teamId) showTeamDetailView(sl.teamId);
@@ -292,6 +293,7 @@ setlists = setlists.filter(x => x.id !== pendingSetlistAction.id);
 if (teamId && teamDataCache[teamId]) { teamDataCache[teamId].setlists = (teamDataCache[teamId].setlists || []).filter(s => s.id !== pendingSetlistAction.id); }
 saveToStorage();
 if (teamId) removeSetlistFromTeamData(pendingSetlistAction.id, teamId);
+if (teamId) logTeamAction(teamId, `Сет-лист «${pendingSetlistAction.name || (sl ? sl.name : '')}» удалён`);
  
 if (wasOnDetailPage) {
 if (teamId) {
@@ -328,6 +330,7 @@ sl.isArchived = false;
 if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = false; }
 saveToStorage();
 syncSetlistIfTeam(sl);
+if (sl.teamId) logTeamAction(sl.teamId, `Сет-лист «${sl.name}» возвращён из архива`);
 renderSetlists();
 if (sl.teamId) showTeamDetailView(sl.teamId);
 }
@@ -343,6 +346,7 @@ sl.isArchived = true;
 if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; }
 saveToStorage();
 syncSetlistIfTeam(sl);
+if (sl.teamId) logTeamAction(sl.teamId, `Сет-лист «${sl.name}» перенесён в архив`);
 goBackFromSetlistDetail();
 }
 }

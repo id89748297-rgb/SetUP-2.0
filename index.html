@@ -144,8 +144,10 @@
 </select>
 <div class="home-actions-row row-top">
 <button class="btn-pastel" onclick="openExpressAdd()">⚡ Добавить песню (экспресс)</button>
+<div class="btn-split-diag">
 <button class="btn-pastel" onclick="document.getElementById('import-song-input').click()">📥 Загрузить</button>
 <button class="btn-pastel" onclick="openMainSongEditor()">➕Добавить</button>
+</div>
 </div>
 <div class="home-actions-row row-bottom">
 <button class="btn-pastel" onclick="exportDatabase()">📤 Экспорт базы</button>
@@ -486,6 +488,18 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 </div>
 <div class="search-wrap"><input type="text" id="team-members-search" class="search-box" placeholder="🔍 Поиск участника..." oninput="renderTeamMembersList(); toggleSearchClearBtn(this)"><button type="button" class="search-clear-btn" onclick="clearSearchInput('team-members-search', renderTeamMembersList)">✕</button></div>
 <div id="team-members-list"></div>
+</div>
+</div>
+
+<!-- === МОДАЛКА: ДЕЙСТВИЯ КОМАНДЫ (журнал событий) === -->
+<div id="modal-team-actions" class="modal modal-fullscreen">
+<div class="modal-content modal-content-full">
+<div class="team-members-header">
+<button class="btn-back" onclick="closeTeamActions()">←</button>
+<div id="team-actions-avatar" class="team-members-header-avatar"></div>
+<h2 style="margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Действия</h2>
+</div>
+<div id="team-actions-list"></div>
 </div>
 </div>
 
