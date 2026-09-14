@@ -695,7 +695,7 @@ display: flex;
 align-items: center;
 gap: 10px;
 padding: 10px 12px;
-padding-top: calc(10px + env(safe-area-inset-top, 0px));
+padding-top: calc(4px + env(safe-area-inset-top, 0px));
 margin-bottom: 0;
 background: #121212;
 flex-shrink: 0;
