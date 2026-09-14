@@ -76,6 +76,7 @@ lockBodyScroll();
     const cached = mCache[teamId];
     currentMembersProfiles = cached ? cached.profiles : {};
     currentMembersIds = cached ? cached.ids : (team.members || []);
+    currentMembersJoined = (cached && cached.joined) ? cached.joined : {};
     document.getElementById('team-members-name').innerText = team.name;
     const avatarEl = document.getElementById('team-members-avatar');
     avatarEl.innerHTML = team.avatar ? `<img src="${team.avatar}" alt="">` : '🎸';
@@ -106,7 +107,7 @@ membersSnap.docs.forEach(d => { currentMembersJoined[d.id] = (d.data() && d.data
             renderTeamMembersList();
             try {
                 const c = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}');
-                c[teamId] = { ids: currentMembersIds, profiles: currentMembersProfiles };
+                c[teamId] = { ids: currentMembersIds, profiles: currentMembersProfiles, joined: currentMembersJoined };
                 localStorage.setItem('clc_team_members_cache', JSON.stringify(c));
             } catch {}
         })
@@ -232,8 +233,12 @@ function renderTeamMembersList() {
         return { uid, p, label: fullName || 'Без имени' };
     });
     if (query) rows = rows.filter(r => r.label.toLowerCase().includes(query));
-    const joined = currentMembersJoined || {};
-rows.sort((a, b) => (joined[b.uid] || 0) - (joined[a.uid] || 0));
+    const joined = currentMembersJoined || {};
+rows.sort((a, b) => {
+const ja = joined[a.uid] || 0, jb = joined[b.uid] || 0;
+if (jb !== ja) return jb - ja;
+return a.uid < b.uid ? -1 : (a.uid > b.uid ? 1 : 0);
+});
     if (rows.length === 0) {
         list.innerHTML = '<div style="text-align:center;color:#888;padding:30px;">Никого не найдено</div>';
         return;
