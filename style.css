@@ -679,7 +679,8 @@ body.light .auth-panel { background: #fff; }
 .auth-links { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; align-items: center; }
 .auth-link { color: #90caf9; font-size: 13px; cursor: pointer; text-align: center; user-select: none; }
 body.light .auth-link { color: #0d47a1; }
-/* === УЧАСТНИКИ: высокая шапка под чёлкой, поиск как раньше === */
+/* === УЧАСТНИКИ: вид как у страницы «Действия» === */
+#modal-team-members.modal-fullscreen { padding: 0 !important; }
 #modal-team-members .modal-content-full {
 display: flex;
 flex-direction: column;
@@ -713,8 +714,11 @@ flex-shrink: 0;
 background: #121212;
 border-bottom: none;
 box-shadow: none;
+padding: 0 12px 10px 12px;
 }
 body.light #modal-team-members .search-wrap { background: #F5F5DC; }
+#modal-team-members .search-wrap .search-box { margin-bottom: 0; background: #1e1e1e; }
+body.light #modal-team-members .search-wrap .search-box { background: #fff; }
 #modal-team-members #team-members-list {
 flex: 1 1 auto;
 min-height: 0;
