@@ -1493,6 +1493,7 @@ id: newId, date: date.trim(), time: '', name: name.trim(),
 isArchived: false, teamId: teamId, songs: []
 });
 saveToStorage();
+logTeamAction(teamId, `Создан сет-лист «${name.trim()}»`);
 showTeamDetailView(teamId);
 renderCarousel();
 }
@@ -1536,11 +1537,12 @@ const team = teams.find(t => t.id === sl.teamId);
 if (!confirm(`Отправить текущую версию сет-листа «${sl.name}» в команду «${team ? team.name : ''}»?\nУ всех участников сет-лист обновится автоматически.`)) return;
 if (!db || !currentUser) { showToast('❌ Нет подключения к облаку', 'error'); return; }
 try {
-await publishSetlistToTeamData(sl, sl.teamId);
-sl.fromTeamSync = true;
-saveToStorage();
-closeModal('modal-share-setlist');
-showToast('✅ Обновление отправлено в команду', 'success');
+	await publishSetlistToTeamData(sl, sl.teamId);
+	sl.fromTeamSync = true;
+	saveToStorage();
+	closeModal('modal-share-setlist');
+	logTeamAction(sl.teamId, `Сет-лист «${sl.name}» обновлён`);
+	showToast('✅ Обновление отправлено в команду', 'success');
 } catch (err) {
 console.error('update setlist in team failed:', err);
 showToast('❌ Не удалось обновить: ' + (err.code || err.message), 'error');
@@ -1611,6 +1613,7 @@ teamIds.forEach(teamId => {
 // обычному участнику менять данные команды нельзя
 if (teamRolesCache[teamId] && getMyRole(teamId) === 'member') return;
 publishSongToTeam(song, teamId).catch(err => console.error('song sync error:', teamId, err));
+logTeamAction(teamId, `Обновлена песня «${song.name || song.title || 'без названия'}»`);
 });
 }
 async function publishSetlistToTeamData(sl, teamId) {
@@ -1653,7 +1656,6 @@ async function publishSetlistToTeamData(sl, teamId) {
             readBy: [currentUser.uid]
         });
     } catch (err) { console.error('Не удалось обновить статус прочтения:', err); }
-    logTeamAction(teamId, `Сет-лист «${sl.name}» обновлён`);
     return true;
 }
 async function removeSetlistFromTeamData(setlistId, teamId) {
@@ -1698,6 +1700,7 @@ async function shareSetlistToTeam(setlistId, teamId) {
         saveToStorage();
         closeModal('modal-share-setlist');
         renderSetlists();
+        logTeamAction(teamId, `Сет-лист «${sl.name}» опубликован в команду`);
         alert(`✅ Сет-лист «${sl.name}» отправлен в команду «${team.name}»!\nОн появится у всех участников автоматически.`);
     } catch (err) {
         alert('❌ Не удалось отправить сет-лист: ' + err.message);

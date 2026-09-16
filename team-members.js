@@ -131,8 +131,13 @@ async function changeTeamMemberRole(uid, newRole) {
     if (uid === currentUser.uid) { alert('❌ Нельзя менять роль самому себе'); return; }
     if (team.createdBy && uid === team.createdBy) { alert('❌ Нельзя изменить роль создателя команды'); return; }
     try {
-        await db.collection('teamRegistry').doc(team.id).collection('members').doc(uid).update({ role: newRole });
-        showToast('✅ Роль обновлена', 'success');
+        await db.collection('teamRegistry').doc(team.id).collection('members').doc(uid).update({ role: newRole });
+        const authorName = [currentMembersProfiles[currentUser.uid]?.displayName, currentMembersProfiles[currentUser.uid]?.lastName].filter(Boolean).join(' ').trim() || 'Владелец';
+        const targetName = [currentMembersProfiles[uid]?.displayName, currentMembersProfiles[uid]?.lastName].filter(Boolean).join(' ').trim() || 'участника';
+        if (newRole === 'member') logTeamAction(team.id, `${authorName} перевёл ${targetName} в участники`);
+        else if (newRole === 'owner') logTeamAction(team.id, `${authorName} передал владение ${targetName}`);
+        else logTeamAction(team.id, `${authorName} назначил ${targetName} администратором`);
+        showToast('✅ Роль обновлена', 'success');
     } catch (err) {
         console.error('role change failed:', err);
         showToast('⚠️ Не удалось изменить роль: ' + err.code, 'error');
@@ -153,8 +158,13 @@ async function kickTeamMember(uid) {
     try {
         await db.collection('teamRegistry').doc(team.id).collection('members').doc(uid).delete();
         await db.collection('teamRegistry').doc(team.id).update({ members: firebase.firestore.FieldValue.arrayRemove(uid) });
-        currentMembersIds = currentMembersIds.filter(id => id !== uid);
-        renderTeamMembersList();
+        currentMembersIds = currentMembersIds.filter(id => id !== uid);
+        delete currentMembersJoined[uid];
+        try {
+            const c = JSON.parse(localStorage.getItem('clc_team_members_cache') || '{}');
+            if (c[team.id]) { c[team.id].ids = currentMembersIds; c[team.id].joined = currentMembersJoined; localStorage.setItem('clc_team_members_cache', JSON.stringify(c)); }
+        } catch {}
+        renderTeamMembersList();
         showToast('✅ Участник удалён из команды', 'success');
     } catch (err) {
         console.error('Не удалось удалить участника:', err);
