@@ -224,6 +224,7 @@ async function saveSetlist() {
             await publishSetlistToTeamData(newSl, teamId);
             newSl.fromTeamSync = true; // сет-лист теперь живёт как командный (одна копия, без дублей)
             saveToStorage();
+            logTeamAction(teamId, `Создан сет-лист «${name}»`);
             showToast('✅ Сет-лист опубликован в команде', 'success');
         } catch (err) {
             console.error('Не удалось опубликовать сет-лист в команде:', err);
@@ -243,11 +244,16 @@ if (!name || !date) return;
 const sl = setlists.find(x => x.id === currentSlId);
 if (sl) {
 if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+const prevName = sl.name, prevDate = sl.date, prevTime = sl.time || '';
 sl.date = date;
 sl.time = time || '';
 sl.name = name;
 saveToStorage();
 syncSetlistIfTeam(sl);
+if (sl.teamId) {
+if (name !== prevName) logTeamAction(sl.teamId, `Сет-лист «${prevName}» переименован в «${name}»`);
+else if (date !== prevDate || (time || '') !== prevTime) logTeamAction(sl.teamId, `У сет-листа «${name}» изменена дата`);
+}
 }
 closeModal('modal-edit-setlist');
 renderSetlists();
@@ -456,6 +462,7 @@ function confirmRemoveFromSl(songId, songName) {
         sl.localUpdatedAt = Date.now();
         saveToStorage();
         syncSetlistIfTeam(sl);
+        if (sl.teamId) logTeamAction(sl.teamId, `Из сет-листа «${sl.name}» удалена песня «${songName}»`);
         renderSlSongs();
     });
 }
@@ -476,6 +483,7 @@ sl.songs.push({id: s.id, capo: 0, key: null, chordpro: null, columns: currentCol
 sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
+if (sl.teamId) logTeamAction(sl.teamId, `В сет-лист «${sl.name}» добавлена песня «${s.title}»`);
 document.getElementById('add-song-search').value = '';
 renderAddSongList();
 renderSlSongs();
