@@ -156,6 +156,39 @@ function showToast(message, type = 'error') {
     setTimeout(() => {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
     }, 3000);
+    // закрытие свайпом (палец или мышь) в любую сторону
+    let dragStart = null;
+    toast.addEventListener('pointerdown', (e) => {
+        dragStart = { x: e.clientX, y: e.clientY };
+        toast.style.animation = 'none';
+        toast.style.transition = 'none';
+        toast.style.opacity = '1';
+        toast.setPointerCapture(e.pointerId);
+    });
+    toast.addEventListener('pointermove', (e) => {
+        if (!dragStart) return;
+        const dx = e.clientX - dragStart.x;
+        const dy = e.clientY - dragStart.y;
+        toast.style.transform = `translate(${dx}px, ${dy}px)`;
+    });
+    const endDrag = (e) => {
+        if (!dragStart) return;
+        const dx = e.clientX - dragStart.x;
+        const dy = e.clientY - dragStart.y;
+        dragStart = null;
+        if (Math.abs(dx) > 50 || Math.abs(dy) > 50) {
+            // убираем сразу, без анимации возврата
+            if (toast.parentNode) toast.parentNode.removeChild(toast);
+        } else {
+            toast.style.transition = '';
+            toast.style.transform = '';
+        }
+    };
+    toast.addEventListener('pointerup', endDrag);
+    toast.addEventListener('pointercancel', () => {
+        dragStart = null;
+        toast.style.transform = '';
+    });
 }
 
 // === СЛУШАТЕЛИ СОСТОЯНИЯ СЕТИ ===

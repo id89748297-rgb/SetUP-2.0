@@ -1372,7 +1372,22 @@ startChatReadsListener(teamId);
 if (teamListenerUnsubs[teamId] || !db || !currentUser) return;
 teamListenerUnsubs[teamId] = db.collection('teamData').doc(teamId).onSnapshot(doc => {
 teamDataCache[teamId] = doc.exists ? doc.data() : { songs: [], setlists: [] };
+// Защита от старых версий приложения: они стирали поле setlists при синхронизации песен.
+// Если поле исчезло, а локально командные сет-листы ещё есть — восстанавливаем их в облако.
+if (doc.exists && teamDataCache[teamId].setlists === undefined) {
+const rescueSetlists = setlists.filter(sl => sl.teamId === teamId && sl.fromTeamSync);
+if (rescueSetlists.length) {
+console.warn('⚠️ Поле setlists стёрто в данных команды — восстанавливаю сет-листы из локальной копии');
+rescueSetlists.forEach(sl => {
+publishSetlistToTeamData(sl, teamId).catch(err => console.error('Не удалось восстановить сет-лист:', err));
+});
+}
+}
 applyTeamOverlay(teamId);
+// пока идёт восстановление, держим локальные копии, чтобы не потерять их при сбое
+for (const rsl of (typeof rescueSetlists !== 'undefined' ? rescueSetlists : [])) {
+if (!setlists.some(x => x.id === rsl.id && x.teamId === teamId)) setlists.push(rsl);
+}
 if (currentTeamDetailId === teamId) showTeamDetailView(teamId);
 if (currentHomeView === 'songs') renderSongs();
 if (currentHomeView === 'setlists') renderSetlists();
@@ -1596,7 +1611,13 @@ const teamSectionNotes = data.sectionNotes || {};
 const teamInlineComments = data.inlineComments || {};
 if (sectionNotes[song.id] && Object.keys(sectionNotes[song.id]).length) teamSectionNotes[song.id] = sectionNotes[song.id];
 if (inlineComments[song.id] && Object.keys(inlineComments[song.id]).length) teamInlineComments[song.id] = inlineComments[song.id];
-tx.set(docRef, { songs: teamSongs, sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
+// tx.set перезаписал бы документ целиком и стёр бы сет-листы команды,
+// поэтому при существующем документе обновляем только нужные поля
+if (doc.exists) {
+tx.update(docRef, { songs: teamSongs, sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
+} else {
+tx.set(docRef, { songs: teamSongs, setlists: [], sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
+}
 });
 return true;
 }
