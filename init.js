@@ -64,10 +64,14 @@ const country = document.getElementById('profile-country-input').value.trim();
 const city = document.getElementById('profile-city-input').value.trim();
 const about = document.getElementById('profile-about-input').value.trim().slice(0, 100);
 
-if (!name) {
-alert('❌ Введите хотя бы имя!');
-return;
-}
+	if (!name) {
+	alert('❌ Введите хотя бы имя!');
+	return;
+	}
+	if (name.length > 32 || lastname.length > 32) {
+	alert('❌ Имя и фамилия — не больше 32 символов!');
+	return;
+	}
 
 try {
 // ✅ Обновляем displayName в Firebase Auth

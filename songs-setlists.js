@@ -141,7 +141,7 @@ if (currentHomeView !== 'songs') { const idx = carouselItems.findIndex(i => i.ty
 }
 function saveSong() {
 const title = document.getElementById('edit-title').value.trim(); const author = document.getElementById('edit-author').value.trim(); const bpm = document.getElementById('edit-bpm').value.trim(); const category = document.getElementById('edit-category').value; const chordpro = document.getElementById('edit-text').value; const key = document.getElementById('edit-key').value;
-if (!title) { alert('Введите название!'); return; } if (!key) { alert('Выберите тональность!'); return; } if (!chordpro.trim()) { alert('Введите текст!'); return; }
+if (!title) { alert('Введите название!'); return; } if (title.length > 32) { alert('Название — не больше 32 символов!'); return; } if (author.length > 32) { alert('Автор — не больше 32 символов!'); return; } if (!key) { alert('Выберите тональность!'); return; } if (!chordpro.trim()) { alert('Введите текст!'); return; }
 const existingSong = songs.find(s => !s.fromTeam && s.title.toLowerCase() === title.toLowerCase() && s.id !== currentSongId);
 if (existingSong) { alert(`⚠️ Песня "${title}" уже существует!`); return; }
 if (isLocalEdit && currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item) item.chordpro = chordpro; saveToStorage(); const editedSong = songs.find(x => x.id === currentSongId); if (sl.teamId) logTeamAction(sl.teamId, `редактировал песню «${editedSong ? editedSong.title : 'песня'}» в сет-листе «${sl.name}»`); alert('✅ Сохранено локально!'); }
@@ -200,9 +200,10 @@ function openSetlistModal() { document.getElementById('sl-date').value = getCurr
 async function saveSetlist() {
     const date = document.getElementById('sl-date').value;
     const time = document.getElementById('sl-time').value;
-    let name = document.getElementById('sl-name').value.trim();
-    if (!name) name = 'Служение';
-    if (!date) return;
+    let name = document.getElementById('sl-name').value.trim();
+    if (!name) name = 'Служение';
+    if (name.length > 32) { alert('Название — не больше 32 символов!'); return; }
+    if (!date) return;
     const teamId = document.getElementById('modal-setlist').dataset.teamId || null;
     const duplicate = setlists.find(sl => (sl.teamId || null) === teamId && sl.date === date && (sl.time || '') === (time || '') && sl.name.trim().toLowerCase() === name.toLowerCase());
     if (duplicate) {
@@ -241,6 +242,7 @@ const date = document.getElementById('edit-sl-date').value;
 const time = document.getElementById('edit-sl-time').value;
 const name = document.getElementById('edit-sl-name').value;
 if (!name || !date) return;
+if (name.trim().length > 32) { alert('Название — не больше 32 символов!'); return; }
 const sl = setlists.find(x => x.id === currentSlId);
 if (sl) {
 if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }

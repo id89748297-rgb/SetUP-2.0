@@ -232,13 +232,13 @@
        <div class="profile-info-card">
 <div class="profile-info-row">
 <span class="profile-label">Имя:</span>
-<input type="text" id="profile-name-input" class="profile-edit-input"
+<input type="text" id="profile-name-input" class="profile-edit-input" maxlength="32"
 value="" placeholder="Введите имя"
 style="text-align: right; background: transparent; border: 1px solid #444; color: #90caf9; font-size: 14px; padding: 6px 10px; border-radius: 6px; max-width: 200px;">
 </div>
 <div class="profile-info-row">
 <span class="profile-label">Фамилия:</span>
-<input type="text" id="profile-lastname-input" class="profile-edit-input"
+<input type="text" id="profile-lastname-input" class="profile-edit-input" maxlength="32"
 value="" placeholder="Не указана"
 style="text-align: right; background: transparent; border: 1px solid #444; color: #90caf9; font-size: 14px; padding: 6px 10px; border-radius: 6px; max-width: 200px;">
 </div>
@@ -393,8 +393,8 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 </div>
 <div style="max-width: 600px; margin: 0 auto;">
 <div class="help-box"><b>Формат:</b><br>• Аккорды: <b>G C D Hm</b> (H вместо B!)<br>• Аккорды с басом: <b>C#/F G/B</b><br>• Аккорды + текст: <b>G C D Текст песни</b><br>• Метки в скобках: <b>E (бросить) H (ALL IN)</b><br>• Заметка справа: <b>G C D *повторить</b><br>• Комментарий строки: <b>G C D Текст **</b><br>• <b>Ссылки:</b> <code>https://...</code> (на отдельной строке)<br>• Заголовки: <b>ПРИПЕВ:</b> <b>1 КУПЛЕТ:</b> <b>БРИДЖ:</b> и т.д.<br>• Картинка: <b>Картинка:</b> (отдельной строкой)<br>• Такты: <b>| F#m / A | E/G# |</b></div>
-<label style="font-weight: bold; margin-bottom: 5px; display: block;">Название <span class="required-star">*</span></label><input type="text" id="edit-title" placeholder="Название песни" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
-<label style="font-weight: bold; margin-bottom: 5px; display: block;">Автор (необязательно)</label><div style="position: relative;"><input type="text" id="edit-author" placeholder="Автор" oninput="showAuthorSuggestions()" onblur="setTimeout(() => hideAuthorSuggestions(), 200)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><div id="author-suggestions" class="author-suggestions" style="display: none;"></div></div>
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">Название <span class="required-star">*</span></label><input type="text" id="edit-title" maxlength="32" placeholder="Название песни" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+<label style="font-weight: bold; margin-bottom: 5px; display: block;">Автор (необязательно)</label><div style="position: relative;"><input type="text" id="edit-author" maxlength="32" placeholder="Автор" oninput="showAuthorSuggestions()" onblur="setTimeout(() => hideAuthorSuggestions(), 200)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><div id="author-suggestions" class="author-suggestions" style="display: none;"></div></div>
 <label style="font-weight: bold; margin-bottom: 5px; display: block;">Тональность <span class="required-star">*</span></label><select id="edit-key"><option value="">-- Выберите тональность --</option><option value="C">C (До)</option><option value="C#">C# / Db</option><option value="D">D (Ре)</option><option value="D#">D# / Eb</option><option value="E">E (Ми)</option><option value="F">F (Фа)</option><option value="F#">F# / Gb</option><option value="G">G (Соль)</option><option value="G#">G# / Ab</option><option value="A">A (Ля)</option><option value="A#">A# / Bb</option><option value="H">H (Си)</option></select>
 <label style="font-weight: bold; margin-bottom: 5px; display: block;">BPM (необязательно)</label><input type="number" id="edit-bpm" placeholder="Например: 120" min="42" max="500" autocomplete="off">
 <label style="font-weight: bold; margin-bottom: 5px; display: block;">Категория (необязательно)</label><select id="edit-category"><option value="">Не указана</option><option value="fast">🔥 Быстрая</option><option value="medium">🎵 Средняя</option><option value="slow">🧎🏻 Медленная</option></select>
@@ -421,8 +421,8 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 </div>
 </div></div>
 <div id="modal-section-edit" class="modal"><div class="modal-content"><h2>Редактировать блок</h2><label style="font-weight: bold; margin-bottom: 5px; display: block;">Название секции</label><input type="text" id="section-edit-label" placeholder="Например: КУПЛЕТ 1"><label style="font-weight: bold; margin-bottom: 5px; display: block;">Содержимое блока</label><textarea id="section-edit-content" style="min-height: 200px;"></textarea><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-section-edit')">Отмена</button><button class="btn-main btn-accent-save" style="width: auto; margin:0;" onclick="saveSectionEdit()">Сохранить</button></div></div></div>
-<div id="modal-setlist" class="modal"><div class="modal-content"><h2>Новый сет-лист</h2><label>Дата:</label><input type="date" id="sl-date"><label>Время:</label><input type="time" id="sl-time"><label>Название мероприятия:</label><input type="text" id="sl-name" placeholder="Воскресное богослужение"><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-setlist')">Отмена</button><button class="btn-main btn-accent-save" style="width: auto; margin:0;" onclick="saveSetlist()">Сохранить</button></div></div></div>
-<div id="modal-edit-setlist" class="modal"><div class="modal-content"><h2>Редактировать сет-лист</h2><label>Дата:</label><input type="date" id="edit-sl-date"><label>Время:</label><input type="time" id="edit-sl-time"><label>Название:</label><input type="text" id="edit-sl-name"><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-edit-setlist')">Отмена</button><button class="btn-main btn-accent-save" style="width: auto; margin:0;" onclick="saveEditSetlist()">Сохранить</button></div></div></div>
+<div id="modal-setlist" class="modal"><div class="modal-content"><h2>Новый сет-лист</h2><label>Дата:</label><input type="date" id="sl-date"><label>Время:</label><input type="time" id="sl-time"><label>Название мероприятия:</label><input type="text" id="sl-name" maxlength="32" placeholder="Воскресное богослужение"><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-setlist')">Отмена</button><button class="btn-main btn-accent-save" style="width: auto; margin:0;" onclick="saveSetlist()">Сохранить</button></div></div></div>
+<div id="modal-edit-setlist" class="modal"><div class="modal-content"><h2>Редактировать сет-лист</h2><label>Дата:</label><input type="date" id="edit-sl-date"><label>Время:</label><input type="time" id="edit-sl-time"><label>Название:</label><input type="text" id="edit-sl-name" maxlength="32"><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-edit-setlist')">Отмена</button><button class="btn-main btn-accent-save" style="width: auto; margin:0;" onclick="saveEditSetlist()">Сохранить</button></div></div></div>
 <div id="modal-add-song" class="modal"><div class="modal-content"><h2>Добавить песню в сет-лист</h2>
 <div class="search-wrap"><input type="text" class="search-box" id="add-song-search" placeholder="🔍 Поиск..." oninput="renderAddSongList(); toggleSearchClearBtn(this)" autocomplete="off"><button type="button" class="search-clear-btn" onclick="clearSearchInput('add-song-search', renderAddSongList)">✕</button></div>
 <div id="add-song-list" class="add-song-list"></div><div class="modal-actions"><button class="btn-secondary" onclick="closeModal('modal-add-song')" style="width: 100%;">Закрыть</button></div></div></div>
@@ -433,7 +433,7 @@ style="width: 100%; background: #1e1e1e; border: 1px solid #444; color: #eee; fo
 <div id="modal-team-edit" class="modal"><div class="modal-content">
 <h2 id="team-modal-title">Создать команду</h2>
 <label style="font-weight: bold; display: block; margin-bottom: 5px;">Название команды <span class="required-star">*</span></label>
-<input type="text" id="team-edit-name" placeholder="Название команды">
+<input type="text" id="team-edit-name" maxlength="32" placeholder="Название команды">
 <label style="font-weight: bold; display: block; margin-bottom: 5px;">Пароль для присоединения (необязательно)</label>
 <input type="text" id="team-edit-password" placeholder="Оставьте пустым, чтобы убрать пароль">
 <label style="font-weight: bold; display: block; margin: 10px 0 5px;">🖼️ Аватарка команды (необязательно, квадратная)</label>

@@ -873,6 +873,7 @@ function saveTeamEdit() {
 const newName = document.getElementById('team-edit-name').value.trim();
 const newPassword = document.getElementById('team-edit-password').value.trim();
 if (!newName) { alert('❌ Введите название команды!'); return; }
+if (newName.length > 32) { alert('❌ Название команды — не больше 32 символов!'); return; }
 function finalizeSave(avatarData) {
 if (editingTeamId) {
 const team = teams.find(t => t.id === editingTeamId);
