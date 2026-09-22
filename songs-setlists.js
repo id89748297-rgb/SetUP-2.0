@@ -144,7 +144,7 @@ const title = document.getElementById('edit-title').value.trim(); const author =
 if (!title) { alert('Введите название!'); return; } if (!key) { alert('Выберите тональность!'); return; } if (!chordpro.trim()) { alert('Введите текст!'); return; }
 const existingSong = songs.find(s => !s.fromTeam && s.title.toLowerCase() === title.toLowerCase() && s.id !== currentSongId);
 if (existingSong) { alert(`⚠️ Песня "${title}" уже существует!`); return; }
-if (isLocalEdit && currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item) item.chordpro = chordpro; saveToStorage(); alert('✅ Сохранено локально!'); }
+if (isLocalEdit && currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item) item.chordpro = chordpro; saveToStorage(); const editedSong = songs.find(x => x.id === currentSongId); if (sl.teamId) logTeamAction(sl.teamId, `В сет-листе «${sl.name}» обновлена песня «${editedSong ? editedSong.title : 'песня'}»`); alert('✅ Сохранено локально!'); }
 else { let song = songs.find(x => x.id === currentSongId);if (song) {
 song.title = title;
 song.chordpro = chordpro;
@@ -299,7 +299,7 @@ setlists = setlists.filter(x => x.id !== pendingSetlistAction.id);
 if (teamId && teamDataCache[teamId]) { teamDataCache[teamId].setlists = (teamDataCache[teamId].setlists || []).filter(s => s.id !== pendingSetlistAction.id); }
 saveToStorage();
 if (teamId) removeSetlistFromTeamData(pendingSetlistAction.id, teamId);
-if (teamId) logTeamAction(teamId, `Сет-лист «${pendingSetlistAction.name || (sl ? sl.name : '')}» удалён`);
+if (teamId) logTeamAction(teamId, `удалил сет-лист «${pendingSetlistAction.name || (sl ? sl.name : '')}»`);
  
 if (wasOnDetailPage) {
 if (teamId) {

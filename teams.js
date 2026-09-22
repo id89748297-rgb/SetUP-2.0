@@ -1379,8 +1379,16 @@ const rescueSetlists = setlists.filter(sl => sl.teamId === teamId && sl.fromTeam
 if (rescueSetlists.length) {
 console.warn('⚠️ Поле setlists стёрто в данных команды — восстанавливаю сет-листы из локальной копии');
 rescueSetlists.forEach(sl => {
+logTeamAction(teamId, `⚠️ Сет-лист «${sl.name}» исчез из данных команды (аварийно) — автоматически восстановлен из локальной копии`);
 publishSetlistToTeamData(sl, teamId).catch(err => console.error('Не удалось восстановить сет-лист:', err));
 });
+} else {
+// локальных копий нет — фиксируем потерю, но пишем один раз за сеанс, чтобы не заспамить журнал
+window.__setlistLossWarnedFor = window.__setlistLossWarnedFor || {};
+if (!window.__setlistLossWarnedFor[teamId]) {
+window.__setlistLossWarnedFor[teamId] = true;
+logTeamAction(teamId, '⚠️ Обнаружена потеря сет-листов в данных команды (данные были стёрты). Локальных копий для восстановления не найдено');
+}
 }
 }
 applyTeamOverlay(teamId);
