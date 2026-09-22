@@ -1479,14 +1479,15 @@ statusSlot = allRead
 ? `<span title="Прочитано всеми участниками" style="color:#42a5f5;font-size:13px;">✔\uFE0E✔\uFE0E</span>`
 : `<span title="Ожидает прочтения" style="color:#888;font-size:13px;">✔\uFE0E</span>`;
 }
-let actions = statusSlot;
-if (sl.isArchived) {
-actions += `<button class="btn-icon" onclick="event.stopPropagation(); restoreSetlist(${sl.id})">↻</button>`;
-actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '', false)">🗑️</button>`;
-} else {
-actions += `<button class="btn-icon" onclick="event.stopPropagation(); openEditSetlistModal(${sl.id})">✏️</button>`;
-actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '', false)">🗑️</button>`;
-}
+			let actions = statusSlot;
+			if (sl.isArchived) {
+			actions += `<button class="btn-icon" onclick="event.stopPropagation(); restoreSetlist(${sl.id})">↻</button>`;
+			actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '', false)">🗑️</button>`;
+			} else {
+			actions += `<button class="btn-icon" onclick="event.stopPropagation(); sendSetlistUpdates(${sl.id})" title="Отправить обновления в команду">☁️</button>`;
+			actions += `<button class="btn-icon" onclick="event.stopPropagation(); openEditSetlistModal(${sl.id})">✏️</button>`;
+			actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '', false)">🗑️</button>`;
+			}
 html += `<div class="list-item ${expiredClass}" style="cursor: pointer;" onclick="clearSetlistSearchAndOpen(${sl.id})">
 <div class="item-left" style="min-width: 0; flex: 1;">
 <div style="min-width: 0; flex: 1;">
@@ -1686,6 +1687,25 @@ async function publishSetlistToTeamData(sl, teamId) {
         });
     } catch (err) { console.error('Не удалось обновить статус прочтения:', err); }
     return true;
+}
+// Быстрая принудительная отправка текущей версии сет-листа в команду (кнопка ☁️ на карточке)
+async function sendSetlistUpdates(setlistId) {
+	const sl = setlists.find(x => x.id === setlistId);
+	if (!sl || !sl.teamId) return;
+	if (getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
+	if (!db || !currentUser) { showToast('❌ Нет подключения к облаку', 'error'); return; }
+	try {
+		await publishSetlistToTeamData(sl, sl.teamId);
+		delete failedSyncSetlists[sl.id];
+		logTeamAction(sl.teamId, `отправил обновления сет-листа «${sl.name}»`);
+		showToast('✅ Обновление отправлено в команду', 'success');
+		if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
+	} catch (err) {
+		console.error('sendSetlistUpdates failed:', err);
+		failedSyncSetlists[sl.id] = true;
+		showToast('❌ Не удалось отправить: ' + (err.code || err.message), 'error');
+		if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
+	}
 }
 async function removeSetlistFromTeamData(setlistId, teamId) {
     if (!db || !currentUser || !teamId) return;
