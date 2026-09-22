@@ -40,21 +40,18 @@ if (icon) icon.innerText = toolbarExpanded ? '️⬆️' : '⬇️';
 }
 function toggleTheme() {
 const body = document.body;
-if (body.classList.contains('dark')) {
+if (body.classList.contains('light')) {
+body.classList.remove('light');
 body.classList.remove('dark');
 body.classList.add('dark-white');
-updateThemeButtons('🌑');
-localStorage.setItem('clc_theme', 'dark-white');
-} else if (body.classList.contains('dark-white')) {
-body.classList.remove('dark-white');
-body.classList.add('light');
-updateThemeButtons('️☀️');
-localStorage.setItem('clc_theme', 'light');
-} else {
-body.classList.remove('light');
-body.classList.add('dark');
 updateThemeButtons('🌙');
-localStorage.setItem('clc_theme', 'dark');
+localStorage.setItem('clc_theme', 'dark-white');
+} else {
+body.classList.remove('dark-white');
+body.classList.remove('dark');
+body.classList.add('light');
+updateThemeButtons('☀️');
+localStorage.setItem('clc_theme', 'light');
 }
 }
 function renderSongLinks(urls) {
@@ -122,7 +119,7 @@ fontSize = s.fontSize || fontSize; currentAccidental = s.accidental || 'sharp'; 
 currentHideLyrics = s.hideLyrics || false;
 if (slId) { const sl = setlists.find(x => x.id === slId); const item = sl.songs.find(x => x.id === id); if (item) { currentCapo = item.capo || 0; const savedKey = item.key || null; if (!isDesktop) currentColumns = item.columns || s.columns || 1; fontSize = item.fontSize || fontSize; currentKey = savedKey || originalKey; currentAccidental = item.accidental || s.accidental || 'sharp'; currentHideChords = item.hideChords !== undefined ? item.hideChords : (s.hideChords || false); if (item.hideLyrics !== undefined) currentHideLyrics = item.hideLyrics; } else { currentKey = originalKey; } }
 else { currentKey = originalKey; }
-if (slId) { const sl = setlists.find(x => x.id === slId); if (sl && sl.fromTeamSync) { const pv = personalViewSettings[slId + '_' + id]; if (pv) { if (pv.capo !== undefined) currentCapo = pv.capo; if (pv.fontSize !== undefined) fontSize = pv.fontSize; if (pv.accidental !== undefined) currentAccidental = pv.accidental; if (pv.hideChords !== undefined) currentHideChords = pv.hideChords; if (pv.hideLyrics !== undefined) currentHideLyrics = pv.hideLyrics; if (pv.columns !== undefined && !isDesktop) currentColumns = pv.columns; } } }
+if (slId) { const sl = setlists.find(x => x.id === slId); if (sl) { const pv = personalViewSettings[slId + '_' + id]; if (pv) { if (pv.capo !== undefined) currentCapo = pv.capo; if (pv.fontSize !== undefined) fontSize = pv.fontSize; if (pv.accidental !== undefined) currentAccidental = pv.accidental; if (pv.hideChords !== undefined) currentHideChords = pv.hideChords; if (pv.hideLyrics !== undefined) currentHideLyrics = pv.hideLyrics; if (pv.columns !== undefined && !isDesktop) currentColumns = pv.columns; } } } else { const pvs = personalViewSettings['song_' + id]; if (pvs) { if (pvs.fontSize !== undefined) fontSize = pvs.fontSize; if (pvs.accidental !== undefined) currentAccidental = pvs.accidental; if (pvs.hideChords !== undefined) currentHideChords = pvs.hideChords; if (pvs.hideLyrics !== undefined) currentHideLyrics = pvs.hideLyrics; if (pvs.columns !== undefined && !isDesktop) currentColumns = pvs.columns; if (pvs.capo !== undefined) currentCapo = pvs.capo; } }
 fillKeySelect('key-select', currentKey, true); document.getElementById('capo-select').value = currentCapo; syncColumnsSelects(currentColumns);
 document.getElementById('btn-accidental').innerText = currentAccidental === 'sharp' ? '♯' : '♭'; document.getElementById('btn-save-all').style.display = 'block';
 const sidePrev = document.getElementById('side-prev'); const sideNext = document.getElementById('side-next'); const swipeHint = document.getElementById('swipe-hint');
@@ -224,9 +221,7 @@ item.accidental = currentAccidental;
 item.hideChords = currentHideChords;
 item.hideLyrics = currentHideLyrics;
 sl.songs.forEach(it => { it.columns = currentColumns; });
-if (sl.fromTeamSync) {
 personalViewSettings[sl.id + '_' + currentSongId] = { capo: currentCapo, fontSize, accidental: currentAccidental, hideChords: currentHideChords, hideLyrics: currentHideLyrics, columns: currentColumns };
-}
 saveToStorage();
 syncSetlistIfTeam(sl);
 saveDefaultSettings();
@@ -242,6 +237,7 @@ song.fontSize = fontSize;
 song.accidental = currentAccidental;
 song.hideChords = currentHideChords;
 song.hideLyrics = currentHideLyrics;
+personalViewSettings['song_' + currentSongId] = { fontSize, accidental: currentAccidental, hideChords: currentHideChords, hideLyrics: currentHideLyrics, columns: currentColumns, capo: currentCapo };
 saveToStorage();
 saveDefaultSettings();
 alert(`✅ Сохранено для ВСЕХ песен:\nКолонки: ${currentColumns}\nРазмер: ${fontSize}\n♯/♭: ${currentAccidental}\nАккорды: ${currentHideChords ? 'скрыты' : 'видны'}\nТекст: ${currentHideLyrics ? 'скрыт' : 'виден'}`);

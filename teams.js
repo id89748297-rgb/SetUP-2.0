@@ -189,7 +189,7 @@ return `<div class="list-item" style="cursor:pointer;" onclick="openMemberProfil
 ${avatarHtml}
 <div style="min-width:0;flex:1;">
 <div class="item-title">${escapeHtml(fullName)}</div>
-<div style="color:#aaa;font-size:13px;margin-top:2px;">${escapeHtml(a.text || '')}</div>
+<div style="color:#aaa;font-size:13px;margin-top:2px;white-space:pre-line;">${escapeHtml(a.text || '')}</div>
 <div style="color:#777;font-size:11px;margin-top:3px;">${formatActionTime(a.createdAt)}</div>
 </div>
 </div>
@@ -1336,6 +1336,9 @@ function startTeamRolesListener(teamId) {
 if (teamRolesListenerUnsubs[teamId] || !db || !currentUser) return;
 teamRolesListenerUnsubs[teamId] = db.collection('teamRegistry').doc(teamId).collection('members')
 .onSnapshot(snap => {
+// пустой снапшот (сбой сети/прав) не должен затирать сохранённый кеш ролей —
+// иначе после обновления страницы права пропадают до следующей удачной загрузки
+if (snap.empty && teamRolesCache[teamId] && Object.keys(teamRolesCache[teamId]).length) return;
 const roles = {};
 let myRawRole;
 snap.forEach(doc => {
@@ -1643,7 +1646,13 @@ teamIds.forEach(teamId => {
 // обычному участнику менять данные команды нельзя
 if (teamRolesCache[teamId] && getMyRole(teamId) === 'member') return;
 publishSongToTeam(song, teamId).catch(err => console.error('song sync error:', teamId, err));
+// журнал: отдельная запись для каждого сет-листа, где используется песня
+const affectedSetlists = setlists.filter(sl => sl.teamId === teamId && sl.songs && sl.songs.some(it => it.id === song.id));
+if (affectedSetlists.length) {
+affectedSetlists.forEach(sl => logTeamAction(teamId, `редактировал песню «${song.name || song.title || 'без названия'}» в сет-листе «${sl.name}»`));
+} else {
 logTeamAction(teamId, `Обновлена песня «${song.name || song.title || 'без названия'}»`);
+}
 });
 }
 async function publishSetlistToTeamData(sl, teamId) {
@@ -1697,7 +1706,6 @@ async function sendSetlistUpdates(setlistId) {
 	try {
 		await publishSetlistToTeamData(sl, sl.teamId);
 		delete failedSyncSetlists[sl.id];
-		logTeamAction(sl.teamId, `отправил обновления сет-листа «${sl.name}»`);
 		showToast('✅ Обновление отправлено в команду', 'success');
 		if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
 	} catch (err) {

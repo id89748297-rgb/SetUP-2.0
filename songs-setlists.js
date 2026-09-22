@@ -19,11 +19,11 @@ updateThemeButtons('☀️');
 document.body.classList.remove('dark');
 document.body.classList.remove('light');
 document.body.classList.add('dark-white');
-updateThemeButtons('🌑');
+updateThemeButtons('🌙');
 } else {
-document.body.classList.add('dark');
+document.body.classList.add('dark-white');
 document.body.classList.remove('light');
-document.body.classList.remove('dark-white');
+document.body.classList.remove('dark');
 updateThemeButtons('🌙');
 }
 const savedColor = localStorage.getItem('clc_color');
@@ -144,7 +144,7 @@ const title = document.getElementById('edit-title').value.trim(); const author =
 if (!title) { alert('Введите название!'); return; } if (!key) { alert('Выберите тональность!'); return; } if (!chordpro.trim()) { alert('Введите текст!'); return; }
 const existingSong = songs.find(s => !s.fromTeam && s.title.toLowerCase() === title.toLowerCase() && s.id !== currentSongId);
 if (existingSong) { alert(`⚠️ Песня "${title}" уже существует!`); return; }
-if (isLocalEdit && currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item) item.chordpro = chordpro; saveToStorage(); const editedSong = songs.find(x => x.id === currentSongId); if (sl.teamId) logTeamAction(sl.teamId, `В сет-листе «${sl.name}» обновлена песня «${editedSong ? editedSong.title : 'песня'}»`); alert('✅ Сохранено локально!'); }
+if (isLocalEdit && currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item) item.chordpro = chordpro; saveToStorage(); const editedSong = songs.find(x => x.id === currentSongId); if (sl.teamId) logTeamAction(sl.teamId, `редактировал песню «${editedSong ? editedSong.title : 'песня'}» в сет-листе «${sl.name}»`); alert('✅ Сохранено локально!'); }
 else { let song = songs.find(x => x.id === currentSongId);if (song) {
 song.title = title;
 song.chordpro = chordpro;
@@ -462,7 +462,7 @@ function confirmRemoveFromSl(songId, songName) {
         sl.localUpdatedAt = Date.now();
         saveToStorage();
         syncSetlistIfTeam(sl);
-        if (sl.teamId) logTeamAction(sl.teamId, `Из сет-листа «${sl.name}» удалена песня «${songName}»`);
+        if (sl.teamId) logSongRemovedBatched(sl.teamId, sl.name, songName);
         renderSlSongs();
     });
 }
@@ -483,10 +483,52 @@ sl.songs.push({id: s.id, capo: 0, key: null, chordpro: null, columns: currentCol
 sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
-if (sl.teamId) logTeamAction(sl.teamId, `В сет-лист «${sl.name}» добавлена песня «${s.title}»`);
+if (sl.teamId) logSongAddedBatched(sl.teamId, sl.name, s.title);
 document.getElementById('add-song-search').value = '';
 renderAddSongList();
 renderSlSongs();
 };
 list.appendChild(div); });
+}
+// Накапливает подряд добавленные песни и пишет их в журнал одной записью
+let pendingSongAdds = {};
+let pendingSongAddsTimer = null;
+
+function logSongAddedBatched(teamId, slName, songTitle) {
+if (!pendingSongAdds[teamId] || pendingSongAdds[teamId].slName !== slName) {
+flushSongAdds(teamId);
+pendingSongAdds[teamId] = { slName: slName, titles: [] };
+}
+pendingSongAdds[teamId].titles.push(songTitle);
+clearTimeout(pendingSongAddsTimer);
+pendingSongAddsTimer = setTimeout(() => Object.keys(pendingSongAdds).forEach(flushSongAdds), 5000);
+}
+
+function flushSongAdds(teamId) {
+const b = pendingSongAdds[teamId];
+if (!b || !b.titles.length) return;
+const list = b.titles.map((t, i) => `${i + 1}) ${t}`).join('\n');
+logTeamAction(teamId, `добавил песни:\n${list}`);
+delete pendingSongAdds[teamId];
+}
+// Накапливает подряд удалённые песни и пишет их в журнал одной записью
+let pendingSongRemoves = {};
+let pendingSongRemovesTimer = null;
+
+function logSongRemovedBatched(teamId, slName, songTitle) {
+if (!pendingSongRemoves[teamId] || pendingSongRemoves[teamId].slName !== slName) {
+flushSongRemoves(teamId);
+pendingSongRemoves[teamId] = { slName: slName, titles: [] };
+}
+pendingSongRemoves[teamId].titles.push(songTitle);
+clearTimeout(pendingSongRemovesTimer);
+pendingSongRemovesTimer = setTimeout(() => Object.keys(pendingSongRemoves).forEach(flushSongRemoves), 5000);
+}
+
+function flushSongRemoves(teamId) {
+const b = pendingSongRemoves[teamId];
+if (!b || !b.titles.length) return;
+const list = b.titles.map((t, i) => `${i + 1}) ${t}`).join('\n');
+logTeamAction(teamId, `удалил песни:\n${list}`);
+delete pendingSongRemoves[teamId];
 }
