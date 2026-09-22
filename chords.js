@@ -28,7 +28,7 @@ return leadingWs + `<span class="accent-word">${processAccentWords(escapeHtml(re
 }
 return processAccentWords(escapeHtml(text));
 }
-function processAccentWords(text) { return text.replace(/(^|\s)=([^\s=]+)/g, '$1<span class="accent-word">$2</span>'); }
+function processAccentWords(text) { return text.replace(/(^|\s)[=@]([^\s=@]+)/g, '$1<span class="accent-word">$2</span>'); }
 function processChordLabels(chords) {
 return chords.replace(/\(([^)]+)\)/g, (match, content) => {
 const trimmed = content.trim();
