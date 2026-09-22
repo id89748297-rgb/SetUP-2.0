@@ -142,6 +142,15 @@ function refreshPage(btnEl) {
     }, 600);
 }
 
+// Цвет адресной строки Android следует за темой приложения
+function syncThemeColorMeta() {
+const meta = document.getElementById('theme-color-meta');
+if (!meta) return;
+const bg = getComputedStyle(document.body).backgroundColor;
+meta.setAttribute('content', bg || '#121212');
+}
+new MutationObserver(syncThemeColorMeta).observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
 // === TOAST-УВЕДОМЛЕНИЯ ===
 function showToast(message, type = 'error') {
     const container = document.getElementById('toast-container');
