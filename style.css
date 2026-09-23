@@ -761,3 +761,11 @@ body.light #modal-team-actions .team-members-header { background: #F5F5DC; }
 #modal-team-actions .list-item { margin-bottom: 0; border-radius: 0; box-shadow: none; border-bottom: 1px solid rgba(255,255,255,0.06); }
 #modal-team-actions .list-item:last-child { border-bottom: none; }
 body.light #modal-team-actions .list-item { border-bottom: 1px solid rgba(0,0,0,0.08); }
+
+/* === ПК: крупнее мелкие кнопки внутри сет-листов и списков === */
+@media (min-width: 768px) {
+.btn-icon { min-width: 44px; min-height: 44px; font-size: 24px; padding: 8px; }
+.order-input { width: 50px; height: 40px; font-size: 15px; }
+.key-select-inline { min-width: 80px; font-size: 14px; min-height: 40px; }
+.item-actions { gap: 6px !important; }
+}
