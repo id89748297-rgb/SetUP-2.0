@@ -1488,7 +1488,7 @@ statusSlot = allRead
 			actions += `<button class="btn-icon" onclick="event.stopPropagation(); restoreSetlist(${sl.id})">↻</button>`;
 			actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '', false)">🗑️</button>`;
 			} else {
-			actions += `<button class="btn-icon" onclick="event.stopPropagation(); sendSetlistUpdates(${sl.id})" title="Отправить обновления в команду">☁️</button>`;
+			if (isTeamOwnerOrAdmin(teamId)) actions += `<button class="btn-icon" onclick="event.stopPropagation(); sendSetlistUpdates(${sl.id})" title="Отправить обновления в команду">☁️</button>`;
 			actions += `<button class="btn-icon" onclick="event.stopPropagation(); openEditSetlistModal(${sl.id})">✏️</button>`;
 			actions += `<button class="btn-icon" onclick="event.stopPropagation(); showSetlistDeleteChoice(${sl.id}, '', false)">🗑️</button>`;
 			}
@@ -1656,15 +1656,19 @@ logTeamAction(teamId, `Обновлена песня «${song.name || song.title
 }
 });
 }
-async function publishSetlistToTeamData(sl, teamId) {
-    if (!db || !currentUser) return false;
+async function publishSetlistToTeamData(sl, teamId, opts) {
+    opts = opts || {};
+    const force = opts.force !== false; // по умолчанию — принудительная публикация (явные действия пользователя)
+    if (!db || !currentUser) return false;
     const songsToShare = sl.songs.map(item => {
         const s = songs.find(x => x.id === item.id);
         return s ? stripPersonalSettingsForTeam(s) : null;
     }).filter(Boolean);
-    const docRef = db.collection('teamData').doc(teamId);
-    let assignedId = null;
-    await db.runTransaction(async (tx) => {
+    const docRef = db.collection('teamData').doc(teamId);
+    let assignedId = null;
+    let skippedStale = false;
+    const sharedAtNow = Date.now();
+    await db.runTransaction(async (tx) => {
         const doc = await tx.get(docRef);
         const data = doc.exists ? doc.data() : { songs: [], setlists: [], sectionNotes: {}, inlineComments: {} };
         const teamSongs = data.songs || [];
@@ -1679,13 +1683,39 @@ async function publishSetlistToTeamData(sl, teamId) {
             if (inlineComments[s.id] && Object.keys(inlineComments[s.id]).length) teamInlineComments[s.id] = inlineComments[s.id];
         });
         const existingIdx = teamSetlists.findIndex(ts => ts.id === sl.id);
-        const sharedSetlist = { id: sl.id, date: sl.date, time: sl.time || '', name: sl.name, isArchived: !!sl.isArchived, sharedBy: currentUser.uid, sharedAt: Date.now(), songs: sl.songs.map(item => stripPersonalSettingsForTeam(item)) };
-        if (existingIdx !== -1) teamSetlists[existingIdx] = sharedSetlist; else teamSetlists.push(sharedSetlist);
-        assignedId = sharedSetlist.id;
-        tx.set(docRef, { songs: teamSongs, setlists: teamSetlists, sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
-    });
-   sl.sharedToTeams = sl.sharedToTeams || [];
-    if (!sl.sharedToTeams.includes(teamId)) sl.sharedToTeams.push(teamId);
+        // Слияние с облачной копией: не даём устаревшему устройству стереть
+        // локальный текст песни (доп. информацию) и тональность, которых у него нет
+        const existingCloudSl = existingIdx !== -1 ? teamSetlists[existingIdx] : null;
+        // Автосинхронизация (force=false) не перезаписывает более свежую облачную версию,
+        // если у устройства нет собственных правок с момента получения данных
+        if (!force && existingCloudSl) {
+            const cloudRev = existingCloudSl.sharedAt || 0;
+            const baseRev = sl.sharedAt || 0;
+            const hasLocalEdits = sl.localUpdatedAt && sl.localUpdatedAt > baseRev;
+            if (cloudRev > baseRev && !hasLocalEdits) {
+                console.warn('⏭️ Публикация сет-листа «' + sl.name + '» пропущена: облако новее, локальных правок нет');
+                skippedStale = true;
+                return;
+            }
+        }
+        const mergedSlSongs = sl.songs.map(item => {
+            const local = stripPersonalSettingsForTeam(item);
+            const cloudItem = existingCloudSl && existingCloudSl.songs ? existingCloudSl.songs.find(ci => ci.id === item.id) : null;
+            if (!cloudItem) return local;
+            if (local.chordpro == null && cloudItem.chordpro != null) local.chordpro = cloudItem.chordpro;
+            if (local.key == null && cloudItem.key != null) local.key = cloudItem.key;
+            return local;
+        });
+        const sharedSetlist = { id: sl.id, date: sl.date, time: sl.time || '', name: sl.name, isArchived: !!sl.isArchived, sharedBy: currentUser.uid, sharedAt: sharedAtNow, songs: mergedSlSongs };
+        if (existingIdx !== -1) teamSetlists[existingIdx] = sharedSetlist; else teamSetlists.push(sharedSetlist);
+        assignedId = sharedSetlist.id;
+        tx.set(docRef, { songs: teamSongs, setlists: teamSetlists, sectionNotes: teamSectionNotes, inlineComments: teamInlineComments, updatedAt: firebase.firestore.FieldValue.serverTimestamp(), updatedBy: currentUser.uid });
+    });
+    if (skippedStale) return true;
+    // новая база ревизий для будущих проверок устаревания
+    sl.sharedAt = sharedAtNow;
+    sl.sharedToTeams = sl.sharedToTeams || [];
+    if (!sl.sharedToTeams.includes(teamId)) sl.sharedToTeams.push(teamId);
     try {
         const myTeamRoles = teamRolesCache[teamId] || {};
         const requiredReaders = Object.keys(myTeamRoles).filter(uid => uid !== currentUser.uid);
@@ -1736,16 +1766,18 @@ readBy: firebase.firestore.FieldValue.arrayUnion(currentUser.uid)
 }, { merge: true }).catch(err => console.error('Не удалось отметить прочтение:', err));
 }
 function syncSetlistIfTeam(sl) {
-    if (sl && sl.teamId) {
-        publishSetlistToTeamData(sl, sl.teamId).then(() => {
-            delete failedSyncSetlists[sl.id];
-            if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
-        }).catch(err => {
-            console.error('Team sync error:', err);
-            failedSyncSetlists[sl.id] = true;
-            if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
-        });
-    }
+    if (sl && sl.teamId) {
+        // force:false — автосинхронизация не перезаписывает более свежую облако-версию,
+        // если у устройства нет своих правок (sl.localUpdatedAt новее полученной версии)
+        publishSetlistToTeamData(sl, sl.teamId, { force: false }).then(() => {
+            delete failedSyncSetlists[sl.id];
+            if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
+        }).catch(err => {
+            console.error('Team sync error:', err);
+            failedSyncSetlists[sl.id] = true;
+            if (currentTeamDetailId === sl.teamId) showTeamDetailView(sl.teamId);
+        });
+    }
 }
 async function shareSetlistToTeam(setlistId, teamId) {
     const sl = setlists.find(x => x.id === setlistId);
@@ -1760,7 +1792,42 @@ async function shareSetlistToTeam(setlistId, teamId) {
         renderSetlists();
         logTeamAction(teamId, `Сет-лист «${sl.name}» опубликован в команду`);
         alert(`✅ Сет-лист «${sl.name}» отправлен в команду «${team.name}»!\nОн появится у всех участников автоматически.`);
-    } catch (err) {
-        alert('❌ Не удалось отправить сет-лист: ' + err.message);
-    }
+    } catch (err) {
+        alert('❌ Не удалось отправить сет-лист: ' + err.message);
+    }
 }
+
+// === ЗАЩИТА ОТ УСТАРЕВШИХ ДАННЫХ ПРИ ВОЗВРАЩЕНИИ ИЗ ФОНА ===
+// Устройство, свернутое на дни, держит старую копию сет-листов. Если участник
+// сразу что-то публикует — он затирает свежие данные. Поэтому при возвращении
+// в приложение принудительно перечитываем данные команд с сервера.
+let __lastTeamsFocusRefresh = 0;
+async function refreshTeamsDataOnFocus() {
+    if (!db || !currentUser) return;
+    if (document.visibilityState && document.visibilityState !== 'visible') return;
+    const now = Date.now();
+    if (now - __lastTeamsFocusRefresh < 3000) return; // не чаще раза в 3 секунды
+    __lastTeamsFocusRefresh = now;
+    let updated = false;
+    for (const t of teams) {
+        try {
+            const doc = await db.collection('teamData').doc(t.id).get({ source: 'server' });
+            teamDataCache[t.id] = doc.exists ? doc.data() : { songs: [], setlists: [] };
+            applyTeamOverlay(t.id);
+            updated = true;
+        } catch (err) { /* сети могло не быть — живой слушатель догонит сам */ }
+    }
+    if (!updated) return;
+    if (currentTeamDetailId) showTeamDetailView(currentTeamDetailId);
+    if (currentHomeView === 'songs') renderSongs();
+    if (currentHomeView === 'setlists') renderSetlists();
+    if (document.getElementById('page-setlist-detail').classList.contains('active') && typeof currentSlId !== 'undefined') {
+        const sl = setlists.find(x => x.id === currentSlId);
+        if (sl) renderSlSongs();
+    }
+    renderCarousel();
+}
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') refreshTeamsDataOnFocus();
+});
+window.addEventListener('online', refreshTeamsDataOnFocus);

@@ -206,14 +206,15 @@ async function saveSetlist() {
     if (!date) return;
     const teamId = document.getElementById('modal-setlist').dataset.teamId || null;
     const duplicate = setlists.find(sl => (sl.teamId || null) === teamId && sl.date === date && (sl.time || '') === (time || '') && sl.name.trim().toLowerCase() === name.toLowerCase());
-    if (duplicate) {
-        if (!confirm(`Сет-лист «${name}» на эту дату и время уже существует. Заменить его новым?`)) return;
-        setlists = setlists.filter(sl => sl.id !== duplicate.id);
-        if (duplicate.teamId) {
-            try { await removeSetlistFromTeamData(duplicate.id, duplicate.teamId); } catch (err) { console.error('Не удалось удалить старый сет-лист из команды:', err); }
-        }
-        saveToStorage();
-    }
+    if (duplicate) {
+        if (!confirm(`Сет-лист «${name}» на эту дату и время уже существует. Заменить его новым?`)) return;
+        setlists = setlists.filter(sl => sl.id !== duplicate.id);
+        if (duplicate.teamId) {
+            // удаление старой копии из облака — в фоне, не задерживаем создание новой
+            removeSetlistFromTeamData(duplicate.id, duplicate.teamId).catch(err => console.error('Не удалось удалить старый сет-лист из команды:', err));
+        }
+        saveToStorage();
+    }
     const newId = getNextId(setlists);
     const newSl = {id: newId, date, time: time || '', name, isArchived: false, teamId: teamId, songs: []};
     setlists.push(newSl);
@@ -221,20 +222,22 @@ async function saveSetlist() {
     closeModal('modal-setlist');
     delete document.getElementById('modal-setlist').dataset.teamId;
    if (teamId) {
+        // показываем сет-лист в списке сразу, не дожидаясь публикации в облаке
+        showTeamDetailView(teamId);
         try {
             await publishSetlistToTeamData(newSl, teamId);
             newSl.fromTeamSync = true; // сет-лист теперь живёт как командный (одна копия, без дублей)
             saveToStorage();
             logTeamAction(teamId, `Создан сет-лист «${name}»`);
             showToast('✅ Сет-лист опубликован в команде', 'success');
-        } catch (err) {
-            console.error('Не удалось опубликовать сет-лист в команде:', err);
-            showToast('⚠️ Не удалось опубликовать сет-лист в команде: ' + err.code, 'error');
-        }
-        showTeamDetailView(teamId);
-    } else {
-        renderSetlists();
-    }
+        } catch (err) {
+            console.error('Не удалось опубликовать сет-лист в команде:', err);
+            showToast('⚠️ Не удалось опубликовать сет-лист в команде: ' + err.code, 'error');
+            showTeamDetailView(teamId);
+        }
+    } else {
+        renderSetlists();
+    }
 }
 function openEditSetlistModal(id) { const sl = setlists.find(x => x.id === id); document.getElementById('edit-sl-date').value = sl.date; document.getElementById('edit-sl-time').value = sl.time || ''; document.getElementById('edit-sl-name').value = sl.name; currentSlId = id; document.getElementById('modal-edit-setlist').classList.add('show'); }
 function saveEditSetlist() {
@@ -250,6 +253,7 @@ const prevName = sl.name, prevDate = sl.date, prevTime = sl.time || '';
 sl.date = date;
 sl.time = time || '';
 sl.name = name;
+if (name !== prevName || date !== prevDate || (time || '') !== prevTime) sl.localUpdatedAt = Date.now();
 saveToStorage();
 syncSetlistIfTeam(sl);
 if (sl.teamId) {
@@ -280,6 +284,7 @@ if (!pendingSetlistAction) return;
 const sl = setlists.find(x => x.id === pendingSetlistAction.id);
 if (sl) {
 sl.isArchived = true;
+sl.localUpdatedAt = Date.now();
 if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; }
 saveToStorage();
 syncSetlistIfTeam(sl);
@@ -335,6 +340,7 @@ if (!pendingSetlistAction) return;
 const sl = setlists.find(x => x.id === pendingSetlistAction.id);
 if (sl) {
 sl.isArchived = false;
+sl.localUpdatedAt = Date.now();
 if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = false; }
 saveToStorage();
 syncSetlistIfTeam(sl);
@@ -351,6 +357,7 @@ if (!sl) return;
 if (sl.teamId && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); return; }
 if (confirm(`Отправить "${sl.name}" в архив?`)) {
 sl.isArchived = true;
+sl.localUpdatedAt = Date.now();
 if (sl.teamId && teamDataCache[sl.teamId]) { const cached = (teamDataCache[sl.teamId].setlists || []).find(c => c.id === sl.id); if (cached) cached.isArchived = true; }
 saveToStorage();
 syncSetlistIfTeam(sl);
@@ -410,8 +417,10 @@ if (!item || !newKey) return;
 // Роли могли ещё не загрузиться (teamRolesCache пуст) — в этом случае не блокируем.
 if (sl.teamId && teamRolesCache[sl.teamId] && getMyRole(sl.teamId) === 'member') { notAllowedForRole(); renderSlSongs(); return; }
 const s = songs.find(x => x.id === songId);
+const prevKey = item.key || null;
 // если выбрали оригинальную тональность песни — сбрасываем, чтобы шла за песней
 if (s && newKey === s.key) { item.key = null; } else { item.key = newKey; }
+if ((item.key || null) !== prevKey) sl.localUpdatedAt = Date.now();
 saveToStorage();
 if (sl.teamId) syncSetlistIfTeam(sl);
 renderSlSongs();
