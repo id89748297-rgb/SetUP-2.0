@@ -50,6 +50,7 @@ let chatReadsCache = {};
 let chatOldestLoaded = {};
 let currentChatTeamId = null;
 let chatEditingMessageId = null;
+let chatReplyToMessageId = null;
 let currentTab = 'current', currentHomeView = 'songs', currentSongId = null, currentSlId = null;
 let originalKey = 'C', currentKey = 'C', currentCapo = 0, currentColumns = 1, fontSize = 14;
 let isLocalEdit = false, pendingSetlistAction = null, sectionNotes = {}, inlineComments = {}, personalViewSettings = {};

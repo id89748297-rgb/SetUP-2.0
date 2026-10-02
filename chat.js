@@ -5,6 +5,7 @@ const team = teams.find(t => t.id === teamId);
 if (!team) return;
 currentChatTeamId = teamId;
 chatEditingMessageId = null;
+cancelChatReply();
 document.getElementById('chat-team-name').innerText = team.name;
 document.getElementById('chat-team-avatar').innerHTML = team.avatar ? `<img src="${escapeHtml(team.avatar)}" alt="">` : '🎸';
 document.getElementById('chat-input').value = '';
@@ -137,6 +138,7 @@ el.style.overflowY = el.scrollHeight > 98 ? 'auto' : 'hidden';
 function closeTeamChat() {
 currentChatTeamId = null;
 chatEditingMessageId = null;
+cancelChatReply();
 __chatKBLast = -1;
 __vvMaxH = 0;
 const pageEl = document.getElementById('page-team-chat');
@@ -233,27 +235,36 @@ if (isMe && !m.deleted) {
 const allRead = otherUids.every(uid => (reads[uid] || 0) >= m.createdAt);
 statusHtml = allRead ? `<span style="color:#42a5f5;font-size:11px;">✔\uFE0E✔\uFE0E</span>` : `<span style="color:#888;font-size:11px;">✔\uFE0E</span>`;
 }
+// цитата отвеченного сообщения (свайп влево → ответ)
+let replyHtml = '';
+if (m.replyTo) {
+const src = msgs.find(x => x.id === m.replyTo);
+const sp = src ? (currentMembersProfiles[src.senderId] || {}) : {};
+const srcName = [sp.displayName, sp.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
+replyHtml = `<div style="border-left:3px solid #42a5f5;padding:2px 8px;margin-bottom:4px;background:rgba(66,165,245,0.08);border-radius:4px;"><div style="font-size:11px;color:#42a5f5;font-weight:bold;">${escapeHtml(srcName)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${src ? (src.deleted ? 'Сообщение удалено' : escapeHtml((src.text || '').slice(0, 80))) : 'Сообщение'}</div></div>`;
+}
 const pressAttrs = !m.deleted ? `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"` : '';
 let bubbleHtml;
 if (isMe) {
 bubbleHtml = `<div style="display:flex;justify-content:flex-end;">
-<div ${pressAttrs} style="max-width:75%;background:rgba(144,202,249,0.18);border-radius:14px 14px 4px 14px;padding:8px 12px;">
-<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;">${bodyText}${editedTag}</div>
+<div ${pressAttrs} data-msg-id="${m.id}" style="max-width:75%;background:rgba(144,202,249,0.18);border-radius:14px 14px 4px 14px;padding:8px 12px;">
+${replyHtml}<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;">${bodyText}${editedTag}</div>
 <div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;">${m.starred ? '<span style="font-size:11px;">⭐</span>' : ''}<span style="font-size:11px;color:#888;">${time}</span>${statusHtml}</div>
 </div>
 </div>`;
 } else {
 bubbleHtml = `<div style="display:flex;gap:8px;align-items:flex-end;">
 ${avatarHtml}
-<div ${pressAttrs} style="max-width:75%;background:#2a2a2a;border-radius:14px 14px 14px 4px;padding:8px 12px;">
+<div ${pressAttrs} data-msg-id="${m.id}" style="max-width:75%;background:#2a2a2a;border-radius:14px 14px 14px 4px;padding:8px 12px;">
 <div style="font-size:12px;color:#90caf9;font-weight:bold;">${escapeHtml(name)}${roleLabel ? ` <span style="color:#888;font-weight:normal;">· ${roleLabel}</span>` : ''}</div>
-<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;margin-top:2px;">${bodyText}${editedTag}</div>
+${replyHtml}<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;margin-top:2px;">${bodyText}${editedTag}</div>
 <div style="font-size:11px;color:#888;margin-top:2px;">${m.starred ? '⭐ ' : ''}${time}</div>
 </div>
 </div>`;
 }
 return dateDivider + bubbleHtml;
 }).join('');
+bindChatSwipeToReply(teamId);
 }
 function handleChatInputKeydown(e) {
 }
@@ -269,7 +280,8 @@ if (chatEditingMessageId) {
 await db.collection('teamRegistry').doc(teamId).collection('chat').doc(chatEditingMessageId).update({ text, editedAt: Date.now() });
 chatEditingMessageId = null;
 } else {
-await db.collection('teamRegistry').doc(teamId).collection('chat').add({ text, senderId: currentUser.uid, createdAt: Date.now() });
+await db.collection('teamRegistry').doc(teamId).collection('chat').add({ text, senderId: currentUser.uid, createdAt: Date.now(), replyTo: chatReplyToMessageId || null });
+cancelChatReply();
 }
 } catch (err) {
 console.error('Не удалось отправить сообщение:', err);
@@ -462,4 +474,57 @@ chatMessagesCache[teamId] = older.concat(chatMessagesCache[teamId] || []);
 renderChatMessages(teamId);
 if (list) list.scrollTop = list.scrollHeight - prevHeight;
 } catch (err) { console.error('Не удалось подгрузить старые сообщения:', err); }
+}
+
+// === ОТВЕТ НА СООБЩЕНИЕ СВАЙПОМ ВЛЕВО (как в Telegram) ===
+function bindChatSwipeToReply(teamId) {
+const list = document.getElementById('chat-messages-list');
+if (!list) return;
+list.querySelectorAll('[data-msg-id]').forEach(el => {
+el.addEventListener('touchstart', (e) => {
+el.__sx = e.touches[0].clientX; el.__sy = e.touches[0].clientY; el.__moved = false;
+el.style.transition = 'none';
+}, { passive: true });
+el.addEventListener('touchmove', (e) => {
+if (el.__sx === undefined) return;
+const dx = e.touches[0].clientX - el.__sx;
+const dy = e.touches[0].clientY - el.__sy;
+// горизонтальное движение сильнее вертикального — это свайп, а не скролл
+if (Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+el.__moved = true;
+cancelChatMsgPress(); // свайп глушит долгое нажатие
+if (dx < 0) el.style.transform = `translateX(${Math.max(dx, -80)}px)`;
+else el.style.transform = '';
+}
+}, { passive: true });
+el.addEventListener('touchend', (e) => {
+el.style.transition = '';
+el.style.transform = '';
+if (el.__moved && el.__sx !== undefined) {
+const dx = e.changedTouches[0].clientX - el.__sx;
+if (dx < -60) startChatReply(teamId, el.dataset.msgId);
+}
+el.__sx = undefined;
+});
+});
+}
+function startChatReply(teamId, msgId) {
+const msg = (chatMessagesCache[teamId] || []).find(m => m.id === msgId);
+if (!msg || msg.deleted) return;
+chatEditingMessageId = null; // ответ и редактирование несовместимы
+chatReplyToMessageId = msgId;
+const p = currentMembersProfiles[msg.senderId] || {};
+const name = [p.displayName, p.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
+const preview = document.getElementById('chat-reply-preview');
+if (!preview) return;
+preview.innerHTML = `<div style="flex:1;min-width:0;border-left:3px solid #42a5f5;padding:2px 8px;"><div style="font-size:12px;color:#42a5f5;font-weight:bold;">Ответ: ${escapeHtml(name)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml((msg.text || '').slice(0, 80))}</div></div><button style="background:none;border:none;color:#888;font-size:18px;padding:4px 8px;" onclick="cancelChatReply()">✕</button>`;
+preview.style.display = 'flex';
+document.getElementById('chat-input').focus();
+}
+function cancelChatReply() {
+chatReplyToMessageId = null;
+const preview = document.getElementById('chat-reply-preview');
+if (!preview) return;
+preview.style.display = 'none';
+preview.innerHTML = '';
 }
