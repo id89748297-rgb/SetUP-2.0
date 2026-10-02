@@ -235,30 +235,33 @@ if (isMe && !m.deleted) {
 const allRead = otherUids.every(uid => (reads[uid] || 0) >= m.createdAt);
 statusHtml = allRead ? `<span style="color:#42a5f5;font-size:11px;">✔\uFE0E✔\uFE0E</span>` : `<span style="color:#888;font-size:11px;">✔\uFE0E</span>`;
 }
-// цитата отвеченного сообщения (свайп влево → ответ)
+// цитата отвеченного сообщения (свайп влево → ответ); тап по цитате — переход к исходному
 let replyHtml = '';
 if (m.replyTo) {
 const src = msgs.find(x => x.id === m.replyTo);
 const sp = src ? (currentMembersProfiles[src.senderId] || {}) : {};
 const srcName = [sp.displayName, sp.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
-replyHtml = `<div style="border-left:3px solid #42a5f5;padding:2px 8px;margin-bottom:4px;background:rgba(66,165,245,0.08);border-radius:4px;"><div style="font-size:11px;color:#42a5f5;font-weight:bold;">${escapeHtml(srcName)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${src ? (src.deleted ? 'Сообщение удалено' : escapeHtml((src.text || '').slice(0, 80))) : 'Сообщение'}</div></div>`;
+replyHtml = `<div onclick="event.stopPropagation(); chatScrollToMessage('${m.replyTo}')" style="border-left:3px solid #42a5f5;padding:2px 8px;margin-bottom:4px;background:rgba(66,165,245,0.08);border-radius:4px;cursor:pointer;"><div style="font-size:11px;color:#42a5f5;font-weight:bold;">${escapeHtml(srcName)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${src ? (src.deleted ? 'Сообщение удалено' : escapeHtml((src.text || '').slice(0, 80))) : 'Сообщение'}</div></div>`;
 }
-const pressAttrs = !m.deleted ? `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"` : '';
+const pressAttrs = !m.deleted ? `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchmove="chatMsgTouchMove(event)" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"` : '';
+// сердечки-реакции (двойное нажатие)
+const heartCount = Object.values(m.reactions || {}).filter(Boolean).length;
+const reactionHtml = heartCount ? `<span style="font-size:11px;">❤️${heartCount > 1 ? ' ' + heartCount : ''}</span>` : '';
 let bubbleHtml;
 if (isMe) {
-bubbleHtml = `<div style="display:flex;justify-content:flex-end;">
+bubbleHtml = `<div id="chat-msg-${m.id}" style="display:flex;justify-content:flex-end;">
 <div ${pressAttrs} data-msg-id="${m.id}" style="max-width:75%;background:rgba(144,202,249,0.18);border-radius:14px 14px 4px 14px;padding:8px 12px;">
 ${replyHtml}<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;">${bodyText}${editedTag}</div>
-<div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;">${m.starred ? '<span style="font-size:11px;">⭐</span>' : ''}<span style="font-size:11px;color:#888;">${time}</span>${statusHtml}</div>
+<div style="display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:2px;">${m.starred ? '<span style="font-size:11px;">⭐</span>' : ''}${reactionHtml}<span style="font-size:11px;color:#888;">${time}</span>${statusHtml}</div>
 </div>
 </div>`;
 } else {
-bubbleHtml = `<div style="display:flex;gap:8px;align-items:flex-end;">
+bubbleHtml = `<div id="chat-msg-${m.id}" style="display:flex;gap:8px;align-items:flex-end;">
 ${avatarHtml}
 <div ${pressAttrs} data-msg-id="${m.id}" style="max-width:75%;background:#2a2a2a;border-radius:14px 14px 14px 4px;padding:8px 12px;">
 <div style="font-size:12px;color:#90caf9;font-weight:bold;">${escapeHtml(name)}${roleLabel ? ` <span style="color:#888;font-weight:normal;">· ${roleLabel}</span>` : ''}</div>
 ${replyHtml}<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;margin-top:2px;">${bodyText}${editedTag}</div>
-<div style="font-size:11px;color:#888;margin-top:2px;">${m.starred ? '⭐ ' : ''}${time}</div>
+<div style="font-size:11px;color:#888;margin-top:2px;">${m.starred ? '⭐ ' : ''}${heartCount ? '❤️' + (heartCount > 1 ? heartCount + ' ' : '') : ''}${time}</div>
 </div>
 </div>`;
 }
@@ -292,12 +295,20 @@ input.value = text;
 function startChatMsgPress(e, teamId, msgId, senderId) {
 const x = e.touches ? e.touches[0].clientX : e.clientX;
 const y = e.touches ? e.touches[0].clientY : e.clientY;
+window.__chatPressX = x; window.__chatPressY = y; // точка старта — для отмены по движению (скролл)
 window.__chatPressFired = false;
 window.__chatPressTimer = setTimeout(() => {
 window.__chatPressFired = true;
 if (navigator.vibrate) navigator.vibrate(30);
 openChatMsgMenu(teamId, msgId, senderId, x, y);
 }, 500);
+}
+// удержание + прокрутка = не открывать меню; отменяем нажатие при сдвиге пальца
+function chatMsgTouchMove(e) {
+if (window.__chatPressTimer === undefined || !e.touches || !e.touches.length) return;
+const dx = e.touches[0].clientX - (window.__chatPressX || 0);
+const dy = e.touches[0].clientY - (window.__chatPressY || 0);
+if (Math.abs(dx) > 10 || Math.abs(dy) > 10) cancelChatMsgPress();
 }
 function cancelChatMsgPress() { clearTimeout(window.__chatPressTimer); }
 function closeChatMsgMenuPopup() {
@@ -318,6 +329,8 @@ const roles = teamRolesCache[teamId] || {};
 const otherUids = Object.keys(roles).filter(uid => uid !== senderId);
 const allRead = otherUids.every(uid => (reads[uid] || 0) >= msg.createdAt);
 const options = [];
+options.push(['reply', '↩️ Ответить']);
+if (msg.text) options.push(['copy', '📋 Копировать текст']);
 options.push(['star', msg.starred ? '⭐ Убрать из избранного' : '⭐ В избранное']);
 if (isMine && !allRead) options.push(['edit', '✏️ Изменить']);
 if (isMine || isOwnerOrAdmin) options.push(['delete', '🗑️ Удалить сообщение']);
@@ -340,7 +353,9 @@ el.addEventListener('click', (e) => {
 e.stopPropagation();
 const action = el.dataset.action;
 closeChatMsgMenuPopup();
-if (action === 'star') toggleStarChatMessage(teamId, msgId);
+if (action === 'reply') startChatReply(teamId, msgId);
+else if (action === 'copy') copyChatMessageText(msg.text);
+else if (action === 'star') toggleStarChatMessage(teamId, msgId);
 else if (action === 'edit') startEditChatMessage(msgId);
 else if (action === 'delete') deleteChatMessage(teamId, msgId);
 else if (action === 'deleteAllKick') deleteAllMessagesFromUserAndKick(teamId, senderId);
@@ -503,9 +518,18 @@ el.style.transform = '';
 if (el.__moved && el.__sx !== undefined) {
 const dx = e.changedTouches[0].clientX - el.__sx;
 if (dx < -60) startChatReply(teamId, el.dataset.msgId);
+} else if (el.__sx !== undefined && !window.__chatPressFired) {
+// двойной тап — сердечко-реакция (как в Telegram)
+const now = Date.now();
+if (el.__lastTapAt && now - el.__lastTapAt < 300) {
+el.__lastTapAt = 0;
+toggleHeartReaction(teamId, el.dataset.msgId);
+} else el.__lastTapAt = now;
 }
 el.__sx = undefined;
 });
+// двойной клик мышью — тоже сердечко (для ПК)
+el.addEventListener('dblclick', () => toggleHeartReaction(teamId, el.dataset.msgId));
 });
 }
 function startChatReply(teamId, msgId) {
@@ -527,4 +551,46 @@ const preview = document.getElementById('chat-reply-preview');
 if (!preview) return;
 preview.style.display = 'none';
 preview.innerHTML = '';
+}
+// Сердечко-реакция: двойное нажатие ставит/снимает, хранится в поле reactions сообщения
+async function toggleHeartReaction(teamId, msgId) {
+if (!db || !currentUser) return;
+const msg = (chatMessagesCache[teamId] || []).find(m => m.id === msgId);
+if (!msg || msg.deleted) return;
+try {
+await db.collection('teamRegistry').doc(teamId).collection('chat').doc(msgId)
+.update({ ['reactions.' + currentUser.uid]: !(msg.reactions && msg.reactions[currentUser.uid]) });
+if (navigator.vibrate) navigator.vibrate(20);
+} catch (err) { console.error('Не удалось поставить реакцию:', err); }
+}
+function copyChatMessageText(text) {
+if (navigator.clipboard && navigator.clipboard.writeText) {
+navigator.clipboard.writeText(text).then(() => showToast('✅ Текст скопирован', 'success')).catch(() => fallbackCopyText(text));
+} else fallbackCopyText(text);
+}
+// Переход к исходному сообщению по тапу на цитату (как в Telegram).
+// Если сообщение ещё не загружено — догружаем историю, потом прокручиваем и подсвечиваем.
+async function chatScrollToMessage(msgId) {
+const teamId = currentChatTeamId;
+if (!teamId || !msgId) return;
+let el = document.getElementById('chat-msg-' + msgId);
+let guard = 0;
+while (!el && chatOldestLoaded[teamId] !== 'end' && guard < 10) {
+guard++;
+const prevCount = (chatMessagesCache[teamId] || []).length;
+await loadMoreChatMessages(teamId);
+if ((chatMessagesCache[teamId] || []).length === prevCount) break; // дальше подгружать нечего
+el = document.getElementById('chat-msg-' + msgId);
+}
+if (!el) {
+showToast('⚠️ Сообщение не найдено', 'info');
+return;
+}
+const list = document.getElementById('chat-messages-list');
+const target = el.getBoundingClientRect().top - list.getBoundingClientRect().top + list.scrollTop - list.clientHeight / 3;
+list.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+// подсветка найденного сообщения
+el.style.transition = 'background 0.4s';
+el.style.background = 'rgba(66,165,245,0.28)';
+setTimeout(() => { el.style.background = ''; }, 1400);
 }
