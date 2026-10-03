@@ -149,6 +149,15 @@ unlockBodyScroll();
 function scrollChatToBottom() {
 const list = document.getElementById('chat-messages-list');
 if (list) list.scrollTop = list.scrollHeight;
+updateChatScrollBottomBtn();
+}
+// стрелка «вниз» — как в Telegram: видна, когда прокрутили далеко от последнего сообщения
+function updateChatScrollBottomBtn() {
+const list = document.getElementById('chat-messages-list');
+const btn = document.getElementById('chat-scroll-bottom-btn');
+if (!list || !btn) return;
+const awayFromBottom = list.scrollHeight - list.scrollTop - list.clientHeight;
+btn.style.display = awayFromBottom > 200 ? 'flex' : 'none';
 }
 function startChatListener(teamId) {
 if (chatListenerUnsubs[teamId] || !db || !currentUser) return;
@@ -206,6 +215,16 @@ if (diffDays === 1) return 'Вчера';
 const months = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
 return `${d.getDate()} ${months[d.getMonth()]}${d.getFullYear() !== now.getFullYear() ? ' ' + d.getFullYear() : ''}`;
 }
+// дата+время у сообщения: сегодня — только время, раньше — как в Telegram («вчера, 21:10» / «12 сентября, 14:35»)
+function formatChatMsgDateTime(ts) {
+const d = new Date(ts);
+const time = d.toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+const now = new Date();
+const startOfDay = (dt) => new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()).getTime();
+const diffDays = Math.round((startOfDay(now) - startOfDay(d)) / (24 * 60 * 60 * 1000));
+if (diffDays === 0) return time;
+return formatChatDateLabel(ts) + ', ' + time;
+}
 function renderChatMessages(teamId) {
 const list = document.getElementById('chat-messages-list');
 if (!list) return;
@@ -226,7 +245,7 @@ const name = [p.displayName, p.lastName].filter(Boolean).join(' ').trim() || 'Б
 const roleObj = roles[m.senderId];
 const roleLabel = roleObj && roleObj.role === 'owner' ? 'Владелец' : (roleObj && roleObj.role === 'admin' ? 'Админ' : '');
 const avatarHtml = p.avatar ? `<img src="${escapeHtml(p.avatar)}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">` : `<div style="width:32px;height:32px;border-radius:50%;background:#444;display:flex;align-items:center;justify-content:center;">👤</div>`;
-const time = new Date(m.createdAt).toLocaleTimeString('ru', { hour: '2-digit', minute: '2-digit' });
+const time = formatChatMsgDateTime(m.createdAt);
 const bodyText = m.deleted ? '<i style="opacity:0.6;">Сообщение удалено</i>' : escapeHtml(m.text || '');
 const editedTag = (!m.deleted && m.editedAt) ? ' <span style="opacity:0.6;font-size:11px;">(изменено)</span>' : '';
 const otherUids = Object.keys(roles).filter(uid => uid !== m.senderId);
@@ -268,6 +287,7 @@ ${replyHtml}<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-brea
 return dateDivider + bubbleHtml;
 }).join('');
 bindChatSwipeToReply(teamId);
+updateChatScrollBottomBtn();
 }
 function handleChatInputKeydown(e) {
 }
@@ -278,6 +298,7 @@ const input = document.getElementById('chat-input');
 const text = input.value.trim();
 if (!text) return;
 input.value = '';
+autoGrowChatInput(input); // сбрасываем выросшую высоту поля
 try {
 if (chatEditingMessageId) {
 await db.collection('teamRegistry').doc(teamId).collection('chat').doc(chatEditingMessageId).update({ text, editedAt: Date.now() });
@@ -291,6 +312,10 @@ console.error('Не удалось отправить сообщение:', err)
 alert('❌ Не удалось отправить сообщение: ' + err.code);
 input.value = text;
 }
+// клавиатура не должна закрываться после отправки — возвращаем фокус в поле
+input.focus();
+// страховка: поле обязано вернуться к высоте в одну строку
+setTimeout(() => autoGrowChatInput(input), 0);
 }
 function startChatMsgPress(e, teamId, msgId, senderId) {
 const x = e.touches ? e.touches[0].clientX : e.clientX;
@@ -332,7 +357,9 @@ const options = [];
 options.push(['reply', '↩️ Ответить']);
 if (msg.text) options.push(['copy', '📋 Копировать текст']);
 options.push(['star', msg.starred ? '⭐ Убрать из избранного' : '⭐ В избранное']);
-if (isMine && !allRead) options.push(['edit', '✏️ Изменить']);
+// своё сообщение можно править 48 часов после отправки — как в Telegram
+const EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
+if (isMine && !msg.deleted && (Date.now() - msg.createdAt) < EDIT_WINDOW_MS) options.push(['edit', '✏️ Изменить']);
 if (isMine || isOwnerOrAdmin) options.push(['delete', '🗑️ Удалить сообщение']);
 if (!isMine && isOwnerOrAdmin) options.push(['deleteAllKick', '⛔ Удалить все сообщения и исключить']);
 if (options.length === 0) return;
@@ -469,6 +496,7 @@ currentMembersTeamId = teamId;
 await kickTeamMember(senderId);
 }
 function handleChatScroll(el) {
+updateChatScrollBottomBtn();
 if (el.scrollTop < 40) loadMoreChatMessages(currentChatTeamId);
 }
 async function loadMoreChatMessages(teamId) {

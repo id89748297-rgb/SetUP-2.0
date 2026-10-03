@@ -789,10 +789,20 @@ if (data.inlineComments && data.inlineComments[s.id]) inlineComments[s.id] = dat
 });
 const cloudSetlists = data.setlists || [];
 const cloudIds = new Set(cloudSetlists.map(cs => cs.id));
+// самый свежий момент публикации в пришедшем срезе — мера свежести снапшота
+const cloudMaxSharedAt = cloudSetlists.reduce((mx, cs) => Math.max(mx, cs.sharedAt || 0), 0);
 const existingById = {};
 setlists.filter(sl => sl.teamId === teamId && sl.fromTeamSync).forEach(sl => { existingById[sl.id] = sl; });
 // убираем и старые облачные копии, и ЛОКАЛЬНЫЕ дубликаты тех же сет-листов (тот же id) — иначе сет-лист задваивается
-setlists = setlists.filter(sl => !(sl.teamId === teamId && (sl.fromTeamSync || cloudIds.has(sl.id))));
+setlists = setlists.filter(sl => {
+if (sl.teamId !== teamId) return true;
+if (cloudIds.has(sl.id)) return false; // будет заменён облачной копией ниже
+if (!sl.fromTeamSync) return true; // локальный, ещё не публиковали — не трогаем
+// отсутствует в срезе, но мы сами опубликовали его позже самого свежего события среза —
+// это устаревший (закэшированный) снапшот, эхо нашей публикации ещё не приехало: сохраняем
+if (sl.sharedAt && sl.sharedAt > cloudMaxSharedAt) return true;
+return false; // публикации нет и в облаке — сет-лист удалён с другого устройства
+});
 cloudSetlists.forEach(cloudSl => {
 const existing = existingById[cloudSl.id];
 const localIsNewer = existing && existing.localUpdatedAt && existing.localUpdatedAt > (cloudSl.sharedAt || 0);
