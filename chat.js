@@ -148,10 +148,22 @@ unlockBodyScroll();
 }
 function scrollChatToBottom() {
 const list = document.getElementById('chat-messages-list');
-if (list) list.scrollTop = list.scrollHeight;
-updateChatScrollBottomBtn();
+if (!list) return;
+// быстрая анимация скролла вниз, как в Telegram: ~300мс с замедлением в конце
+const startTop = list.scrollTop;
+const distance = list.scrollHeight - list.clientHeight - startTop;
+if (distance <= 0) { updateChatScrollBottomBtn(); return; }
+const duration = Math.min(350, 150 + distance / 8); // чем дальше — тем дольше, но не больше 350мс
+const startTime = performance.now();
+cancelAnimationFrame(list.__scrollAnim || 0);
+list.__scrollAnim = requestAnimationFrame(function step(now) {
+const t = Math.min(1, (now - startTime) / duration);
+const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic — быстрый старт, мягкое торможение
+list.scrollTop = startTop + distance * eased;
+if (t < 1) list.__scrollAnim = requestAnimationFrame(step);
+else updateChatScrollBottomBtn();
+});
 }
-// стрелка «вниз» — как в Telegram: видна, когда прокрутили далеко от последнего сообщения
 function updateChatScrollBottomBtn() {
 const list = document.getElementById('chat-messages-list');
 const btn = document.getElementById('chat-scroll-bottom-btn');
