@@ -262,7 +262,8 @@ const sp = src ? (currentMembersProfiles[src.senderId] || {}) : {};
 const srcName = [sp.displayName, sp.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
 replyHtml = `<div onclick="event.stopPropagation(); chatScrollToMessage('${m.replyTo}')" style="border-left:3px solid #42a5f5;padding:2px 8px;margin-bottom:4px;background:rgba(66,165,245,0.08);border-radius:4px;cursor:pointer;"><div style="font-size:11px;color:#42a5f5;font-weight:bold;">${escapeHtml(srcName)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${src ? (src.deleted ? 'Сообщение удалено' : escapeHtml((src.text || '').slice(0, 80))) : 'Сообщение'}</div></div>`;
 }
-const pressAttrs = !m.deleted ? `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchmove="chatMsgTouchMove(event)" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"` : '';
+// долгое нажатие доступно и удалённым сообщениям — для окончательной очистки
+const pressAttrs = `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchmove="chatMsgTouchMove(event)" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"`;
 // сердечки-реакции (двойное нажатие)
 const heartCount = Object.values(m.reactions || {}).filter(Boolean).length;
 const reactionHtml = heartCount ? `<span style="font-size:11px;">❤️${heartCount > 1 ? ' ' + heartCount : ''}</span>` : '';
@@ -354,14 +355,19 @@ const roles = teamRolesCache[teamId] || {};
 const otherUids = Object.keys(roles).filter(uid => uid !== senderId);
 const allRead = otherUids.every(uid => (reads[uid] || 0) >= msg.createdAt);
 const options = [];
+if (msg.deleted) {
+// удалённое (надгробие) — можно вычистить окончательно
+if (isMine || isOwnerOrAdmin) options.push(['purge', '🗑️ Удалить из чата окончательно']);
+} else {
 options.push(['reply', '↩️ Ответить']);
 if (msg.text) options.push(['copy', '📋 Копировать текст']);
 options.push(['star', msg.starred ? '⭐ Убрать из избранного' : '⭐ В избранное']);
 // своё сообщение можно править 48 часов после отправки — как в Telegram
 const EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
-if (isMine && !msg.deleted && (Date.now() - msg.createdAt) < EDIT_WINDOW_MS) options.push(['edit', '✏️ Изменить']);
+if (isMine && (Date.now() - msg.createdAt) < EDIT_WINDOW_MS) options.push(['edit', '✏️ Редактировать']);
 if (isMine || isOwnerOrAdmin) options.push(['delete', '🗑️ Удалить сообщение']);
 if (!isMine && isOwnerOrAdmin) options.push(['deleteAllKick', '⛔ Удалить все сообщения и исключить']);
+}
 if (options.length === 0) return;
 const overlay = document.createElement('div');
 overlay.id = 'chat-msg-menu-overlay';
@@ -382,6 +388,7 @@ const action = el.dataset.action;
 closeChatMsgMenuPopup();
 if (action === 'reply') startChatReply(teamId, msgId);
 else if (action === 'copy') copyChatMessageText(msg.text);
+else if (action === 'purge') purgeChatMessage(teamId, msgId);
 else if (action === 'star') toggleStarChatMessage(teamId, msgId);
 else if (action === 'edit') startEditChatMessage(msgId);
 else if (action === 'delete') deleteChatMessage(teamId, msgId);
@@ -595,6 +602,18 @@ function copyChatMessageText(text) {
 if (navigator.clipboard && navigator.clipboard.writeText) {
 navigator.clipboard.writeText(text).then(() => showToast('✅ Текст скопирован', 'success')).catch(() => fallbackCopyText(text));
 } else fallbackCopyText(text);
+}
+// Окончательное удаление «надгробия» удалённого сообщения — из Firestore и, как следствие, из кеша всех участников
+async function purgeChatMessage(teamId, msgId) {
+if (!db || !currentUser) return;
+if (!confirm('Удалить это сообщение из чата окончательно? Оно исчезнет у всех участников.')) return;
+try {
+await db.collection('teamRegistry').doc(teamId).collection('chat').doc(msgId).delete();
+showToast('✅ Сообщение удалено окончательно', 'success');
+} catch (err) {
+console.error('Не удалось удалить сообщение окончательно:', err);
+alert('❌ Не удалось удалить: ' + (err.code || err.message));
+}
 }
 // Переход к исходному сообщению по тапу на цитату (как в Telegram).
 // Если сообщение ещё не загружено — догружаем историю, потом прокручиваем и подсвечиваем.
