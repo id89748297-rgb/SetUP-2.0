@@ -1,5 +1,15 @@
 ﻿// === ЧАТ КОМАНДЫ: сообщения, прочтения, меню, очистка, подгрузка истории ===
 // Состояние чата (chatMessagesCache, chatReadsCache и др.) объявлено в state-utils.js
+// === ЧАТ КОМАНДЫ: сообщения, прочтения, меню, очистка, подгрузка истории ===
+// Состояние чата (chatMessagesCache, chatReadsCache и др.) объявлено в state-utils.js
+
+// === ЦВЕТА ИМЁН УЧАСТНИКОВ (как в Telegram: цвет = ID по модулю палитры) ===
+const CHAT_NAME_COLORS = ['#e06a6a', '#7cb97c', '#6aa7d8', '#c99ce0', '#d8b26a', '#6ad0c3', '#d86a9e', '#9db06a'];
+function chatNameColor(uid) {
+let h = 0;
+for (let i = 0; i < uid.length; i++) h = (h * 31 + uid.charCodeAt(i)) >>> 0;
+return CHAT_NAME_COLORS[h % CHAT_NAME_COLORS.length];
+}
 function openTeamChat(teamId) {
 const team = teams.find(t => t.id === teamId);
 if (!team) return;
@@ -272,7 +282,7 @@ if (m.replyTo) {
 const src = msgs.find(x => x.id === m.replyTo);
 const sp = src ? (currentMembersProfiles[src.senderId] || {}) : {};
 const srcName = [sp.displayName, sp.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
-replyHtml = `<div onmousedown="event.preventDefault()" onclick="event.stopPropagation(); chatScrollToMessage('${m.replyTo}')" style="border-left:3px solid #42a5f5;padding:2px 8px;margin-bottom:4px;background:rgba(66,165,245,0.08);border-radius:4px;cursor:pointer;"><div style="font-size:11px;color:#42a5f5;font-weight:bold;">${escapeHtml(srcName)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${src ? (src.deleted ? 'Сообщение удалено' : escapeHtml((src.text || '').slice(0, 80))) : 'Сообщение'}</div></div>`;
+replyHtml = `<div onmousedown="event.preventDefault()" onclick="event.stopPropagation(); chatScrollToMessage('${m.replyTo}')" style="border-left:3px solid #42a5f5;padding:2px 8px;margin-bottom:4px;background:rgba(66,165,245,0.08);border-radius:4px;cursor:pointer;"><div style="font-size:11px;color:${chatNameColor(src ? src.senderId : m.senderId)};font-weight:bold;">${escapeHtml(srcName)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${src ? (src.deleted ? 'Сообщение удалено' : escapeHtml((src.text || '').slice(0, 80))) : 'Сообщение'}</div></div>`;
 }
 // долгое нажатие доступно и удалённым сообщениям — для окончательной очистки
 const pressAttrs = `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchmove="chatMsgTouchMove(event)" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"`;
@@ -291,7 +301,8 @@ ${replyHtml}<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-brea
 bubbleHtml = `<div id="chat-msg-${m.id}" style="display:flex;gap:8px;align-items:flex-end;">
 ${avatarHtml}
 <div ${pressAttrs} data-msg-id="${m.id}" style="max-width:75%;background:#2a2a2a;border-radius:14px 14px 14px 4px;padding:8px 12px;">
-<div style="font-size:12px;color:#90caf9;font-weight:bold;">${escapeHtml(name)}${roleLabel ? ` <span style="color:#888;font-weight:normal;">· ${roleLabel}</span>` : ''}</div>
+<div style="font-size:12px;color:${chatNameColor(m.senderId)};font-weight:bold;">${escapeHtml(name)}${roleLabel ? ` <span style="color:#888;font-weight:normal;">· ${roleLabel}</span>` : ''}
+</div>
 ${replyHtml}<div style="font-size:14px;color:#eee;white-space:pre-wrap;word-break:break-word;margin-top:2px;">${bodyText}${editedTag}</div>
 <div style="font-size:11px;color:#888;margin-top:2px;">${m.starred ? '⭐ ' : ''}${heartCount ? '❤️' + (heartCount > 1 ? heartCount + ' ' : '') : ''}${time}</div>
 </div>
