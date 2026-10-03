@@ -152,11 +152,30 @@ window.scrollTo({ top: 0, behavior: 'instant' });
 }
 function updatePdfOrCopyButton() { const btn = document.getElementById('btn-pdf-or-copy'); if (window.innerWidth <= 768) btn.innerHTML = '<div style="display: flex; flex-direction: column; align-items: center; line-height: 1.1;"><span style="font-size: 20px;">📋</span><span style="font-size: 8px; margin-top: 2px;">копировать</span></div>'; else btn.innerHTML = '📄 PDF'; }
 function handlePdfOrCopy() { if (window.innerWidth <= 768) copySongText(); else downloadPdf(); }
-function copySongText() { const s = songs.find(x => x.id === currentSongId); if (!s) return; let chordpro = s.chordpro; if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item && item.chordpro) chordpro = item.chordpro; } let result = `${s.title}\n`; if (s.author) result += `Автор: ${s.author}\n`; result += `Тональность: ${currentKey}\n`; chordpro.split('\n').forEach(line => { const t = line.trim(); if (t === '') { result += '\n'; return; } const p = parseMixedLine(t); if (p.chords) { // транспонируем в выбранную тональность — как на экране просмотра
+function copySongText() {
+const s = songs.find(x => x.id === currentSongId); if (!s) return;
+let chordpro = s.chordpro;
+if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl.songs.find(x => x.id === currentSongId); if (item && item.chordpro) chordpro = item.chordpro; }
+let result = `${s.title}\n`;
+if (s.author) result += `Автор: ${s.author}\n`;
+result += `Тональность: ${currentKey}\n`;
+chordpro.split('\n').forEach(line => {
+const t = line.trim();
+if (t === '') { result += '\n'; return; }
+// строки со ссылками копируем как есть — иначе разбор аккордов режет их на «h» + хвост
+if (URL_REGEX.test(t)) { URL_REGEX.lastIndex = 0; result += `${t}\n`; return; }
+URL_REGEX.lastIndex = 0;
+const p = parseMixedLine(t);
+// скрытые аккорды не копируем — что на экране, то и в буфере
+if (p.chords && !currentHideChords) {
 let dc = originalKey !== currentKey ? transposeLine(p.chords, originalKey, currentKey) : p.chords;
 if (currentCapo > 0) dc = transposeLine(dc, currentKey, NOTES_SHARP[((NOTES_SHARP.indexOf(currentKey) - currentCapo) % 12 + 12) % 12]);
-p.chords = dc; } if (p.chords && p.text) result += `${p.chords}\n${p.text}\n`; else if (p.chords) result += `${p.chords}\n`; else if (p.text) result += `${p.text}\n`; }); if (navigator.clipboard?.writeText) navigator.clipboard.writeText(result).then(() => alert('✅ Скопировано!')).catch(() => fallbackCopyText(result)); else fallbackCopyText(result); }
-function fallbackCopyText(text) { const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); alert('✅ Скопировано!'); } catch { alert('❌ Не удалось'); } document.body.removeChild(ta); }
+result += `${p.chords}\n`;
+}
+if (p.text) result += `${p.text}\n`;
+});
+if (navigator.clipboard?.writeText) navigator.clipboard.writeText(result).then(() => alert('✅ Скопировано!')).catch(() => fallbackCopyText(result)); else fallbackCopyText(result);
+}
 function toggleInlineEdit() {
 if (isInlineEditing) { cancelInlineEdit(); return; }
 const s = songs.find(x => x.id === currentSongId);
@@ -417,3 +436,28 @@ currentImageKey = null;
 }
 function changeFontSize(d) { fontSize = Math.max(8, Math.min(32, fontSize + d)); updateSongView(); }
 function downloadPdf() { const s = songs.find(x => x.id === currentSongId); if (!s) return; let chordpro = s.chordpro, key = s.key; if (currentSlId) { const sl = setlists.find(x => x.id === currentSlId); const item = sl?.songs.find(x => x.id === currentSongId); if (item) { if (item.chordpro) chordpro = item.chordpro; if (item.key) key = item.key; if (item.capo > 0 && key) { key = NOTES_SHARP[((NOTES_SHARP.indexOf(key) + item.capo) % 12 + 12) % 12]; chordpro = transposeChordproText(chordpro, s.key, key); } } } let bodyHtml = '<div class="pdf-body">'; chordpro.split('\n').forEach(line => { const t = line.trim(); if (t.match(SECTION_RE)) bodyHtml += `<div class="pdf-section">${t.toUpperCase()}</div>`; else if (t) { const p = parseMixedLine(t); if (p.chords && p.text) bodyHtml += `<div class="pdf-line"><b>${p.chords}</b> ${processAccentWords(p.text)}</div>`; else if (p.chords) bodyHtml += `<div class="pdf-chords">${p.chords}</div>`; else if (p.text) bodyHtml += `<div class="pdf-text">${processAccentWords(p.text)}</div>`; if (p.rightNote) bodyHtml += `<div class="pdf-note">${p.rightNote}</div>`; } }); bodyHtml += '</div>'; const pw = window.open('', '_blank'); if (!pw) { alert('Разрешите всплывающие окна'); return; } pw.document.open(); pw.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${s.title}</title><style>@page{size:A4 portrait;margin:10mm}*{box-sizing:border-box}html,body{margin:0;padding:0;font-family:Arial,sans-serif;color:#000;background:#fff;-webkit-print-color-adjust:exact;print-color-adjust:exact}.pdf-header{text-align:center;margin-bottom:8mm}.pdf-header h1{font-size:16px;margin:0 0 3px}.pdf-header .meta{font-size:11px;color:#333}.pdf-body{width:190mm;margin:0 auto;column-count:2;column-gap:8mm;column-fill:balance;font-size:11px;line-height:1.35}.pdf-section{font-size:12px;font-weight:bold;text-transform:uppercase;margin-top:3mm;margin-bottom:1mm;break-after:avoid}.pdf-line,.pdf-chords,.pdf-text{margin-bottom:1.5mm;break-inside:avoid}.pdf-note{display:inline-block;border:1px solid #000;padding:1px 5px;font-weight:bold;font-size:10px;margin-left:3mm}@media print{.pdf-body{width:190mm!important;column-count:2!important;column-fill:balance!important}}</style></head><body><div class="pdf-header"><h1>${s.title}</h1><p class="meta">${s.author ? `Автор: ${s.author}<br>` : ''}Тональность: ${key || '—'}${s.bpm ? ` · BPM: ${s.bpm}` : ''}</p></div>${bodyHtml}<script>window.addEventListener('load',function(){setTimeout(function(){window.focus();window.print()},300)})<\/script></body></html>`); pw.document.close(); }
+// Вставка форматированного текста: достаём URL из скрытых гиперссылок (заметки, мессенджеры)
+function handleSongTextPaste(e) {
+const cd = e.clipboardData;
+if (!cd) return;
+const html = cd.getData('text/html');
+const text = cd.getData('text/plain') || '';
+if (!html) return; // обычная текстовая вставка — браузер справится сам
+const doc = new DOMParser().parseFromString(html, 'text/html');
+let enriched = text;
+doc.querySelectorAll('a[href]').forEach(a => {
+const href = a.getAttribute('href') || '';
+const label = (a.textContent || '').trim();
+// если URL есть в HTML, но отсутствует в текстовой версии — дописываем рядом со словом
+if (href && label && href.startsWith('http') && !enriched.includes(href)) {
+enriched = enriched.replace(label, label + ' ' + href);
+}
+});
+if (enriched !== text) {
+e.preventDefault();
+const ta = e.target;
+const before = ta.value.slice(0, ta.selectionStart);
+const after = ta.value.slice(ta.selectionEnd);
+ta.value = before + enriched + after;
+}
+}
