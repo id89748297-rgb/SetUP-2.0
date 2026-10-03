@@ -260,7 +260,7 @@ if (m.replyTo) {
 const src = msgs.find(x => x.id === m.replyTo);
 const sp = src ? (currentMembersProfiles[src.senderId] || {}) : {};
 const srcName = [sp.displayName, sp.lastName].filter(Boolean).join(' ').trim() || 'Без имени';
-replyHtml = `<div onclick="event.stopPropagation(); chatScrollToMessage('${m.replyTo}')" style="border-left:3px solid #42a5f5;padding:2px 8px;margin-bottom:4px;background:rgba(66,165,245,0.08);border-radius:4px;cursor:pointer;"><div style="font-size:11px;color:#42a5f5;font-weight:bold;">${escapeHtml(srcName)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${src ? (src.deleted ? 'Сообщение удалено' : escapeHtml((src.text || '').slice(0, 80))) : 'Сообщение'}</div></div>`;
+replyHtml = `<div onmousedown="event.preventDefault()" onclick="event.stopPropagation(); chatScrollToMessage('${m.replyTo}')" style="border-left:3px solid #42a5f5;padding:2px 8px;margin-bottom:4px;background:rgba(66,165,245,0.08);border-radius:4px;cursor:pointer;"><div style="font-size:11px;color:#42a5f5;font-weight:bold;">${escapeHtml(srcName)}</div><div style="font-size:12px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${src ? (src.deleted ? 'Сообщение удалено' : escapeHtml((src.text || '').slice(0, 80))) : 'Сообщение'}</div></div>`;
 }
 // долгое нажатие доступно и удалённым сообщениям — для окончательной очистки
 const pressAttrs = `ontouchstart="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" ontouchmove="chatMsgTouchMove(event)" ontouchend="cancelChatMsgPress()" ontouchcancel="cancelChatMsgPress()" onmousedown="startChatMsgPress(event,'${teamId}','${m.id}','${m.senderId}')" onmouseup="cancelChatMsgPress()" onmouseleave="cancelChatMsgPress()"`;
@@ -640,4 +640,7 @@ list.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
 el.style.transition = 'background 0.4s';
 el.style.background = 'rgba(66,165,245,0.28)';
 setTimeout(() => { el.style.background = ''; }, 1400);
+// клавиатура не должна сворачиваться при переходе к сообщению
+const chatInput = document.getElementById('chat-input');
+if (chatInput) chatInput.focus();
 }
